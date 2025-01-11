@@ -27,56 +27,46 @@ import java.util.Scanner;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "servoTesting", group = "Teleops")
+// This is the class for all the calling and organizing of the functions. It runs the logic on the WHOLE
+// teleop, not the specific "buttons doing what" stuff, but deciding what should and shouldn't run
+// based off of input from the specific classes.
+@TeleOp(name = "intake", group = "Teleops")
 @Config
-public class servoTesting extends OpMode {
+public class intake extends OpMode {
+
+    DcMotor intakeSpinners;
+    DcMotor intakeSpinners2;
 
 
-    // outtake servos
-    Servo curServo;
-    Gamepad previousGamepad1 = new Gamepad();
-    Gamepad previousGamepad2 = new Gamepad();
-    Gamepad currentGamepad1 = new Gamepad();
-    Gamepad currentGamepad2 = new Gamepad();
-    double rotatorConstant = 0;
-
-    // intake servos
-    Servo intakePivotR;
-    Servo intakePivotL;
-
-    // b - add 0.1 to the servo
-    // a - subtract 0.1 to the servo
-
-    // NOTE: Upon setting to the servo/servos to be tuned, they go to position 0, wherever that may be
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    ////////////////////////////////////////////////////////////////////////////////
     @Override
-    public void init() {
-        curServo = hardwareMap.servo.get(("curServo"));
+    public void init(){
+
+        intakeSpinners = hardwareMap.dcMotor.get("its");
+        intakeSpinners2 = hardwareMap.dcMotor.get("itss");
+        intakeSpinners.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intakeSpinners2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////
     @Override
     public void loop() {
-        currentGamepad1.copy(gamepad1);
-        currentGamepad2.copy(gamepad2);
-
-        telemetry.addData("Servo position", rotatorConstant);
-        telemetry.update();
-        if (gamepad2.b && !previousGamepad2.b)
+        if (gamepad2.right_trigger > 0.4)
         {
-            rotatorConstant += 0.1;
-            telemetry.update();
+            intakeSpinners.setPower(1);
+            intakeSpinners2.setPower(-1);
         }
-        else if (gamepad2.a && !previousGamepad2.a)
+        else if (gamepad2.left_trigger == 0)
         {
-            rotatorConstant -= 0.1;
-            telemetry.update();
+            intakeSpinners.setPower(0);
+            intakeSpinners2.setPower(0);
         }
-        curServo.setPosition(rotatorConstant);
+        else if (gamepad2.left_trigger > 0.4)
+        {
+            intakeSpinners.setPower(-1);
+            intakeSpinners2.setPower(1);        }
 
-        previousGamepad1.copy(currentGamepad1);
-        previousGamepad2.copy(currentGamepad2);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

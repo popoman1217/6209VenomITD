@@ -103,6 +103,7 @@ public class teleop extends OpMode {
             mechanisms.setBaseOuttakeLift();
             mechanisms.setOutTakeClawGrab();
             mechanisms.setOuttakeArmToNeutralPos();
+            mechanisms.setIntakePivot();
             //mechanisms.setOutTakeLift();
             //mechanisms.setInTakeLift();
             //mechanisms.setInTakeClawGrab();
