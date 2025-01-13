@@ -40,14 +40,8 @@ public class servoTesting extends OpMode {
     Gamepad currentGamepad2 = new Gamepad();
     double rotatorConstant = 0;
 
-    // intake servos
-    Servo intakePivotR;
-    Servo intakePivotL;
-
-    // b - add 0.1 to the servo
-    // a - subtract 0.1 to the servo
-
-    // NOTE: Upon setting to the servo/servos to be tuned, they go to position 0, wherever that may be
+    // right bumper - add 0.1 to the servo
+    // left bumper - subtract 0.1 to the servo
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,12 +57,12 @@ public class servoTesting extends OpMode {
 
         telemetry.addData("Servo position", rotatorConstant);
         telemetry.update();
-        if (gamepad2.b && !previousGamepad2.b)
+        if (gamepad2.right_bumper && !previousGamepad2.right_bumper)
         {
             rotatorConstant += 0.1;
             telemetry.update();
         }
-        else if (gamepad2.a && !previousGamepad2.a)
+        else if (gamepad2.left_bumper && !previousGamepad2.left_bumper)
         {
             rotatorConstant -= 0.1;
             telemetry.update();

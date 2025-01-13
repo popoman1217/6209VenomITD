@@ -24,6 +24,7 @@ public class Mechanisms {
     Servo outTakePivotLeft;
     Servo outTakeClaw;
     Servo outTakeFlip;
+    Servo hyperServo;
 
     // intake lifts
     DcMotor inTakeLift;
@@ -201,6 +202,8 @@ public class Mechanisms {
         brakePosOT = (outTakeLiftLeft.getCurrentPosition() + outTakeLiftLeft.getCurrentPosition()) / 2.0;
 
         //intakePivotL.setPosition(UP_IT_FLIP_POS - .15);
+
+        hyperServo = opMode.hardwareMap.servo.get("elbowR");
 
         master = opMode;
     }
@@ -599,7 +602,6 @@ public class Mechanisms {
     }
 
      */
-
     //////////////////////////////////////////////////////////////////////////////
     /*public void runTesting()
     {
