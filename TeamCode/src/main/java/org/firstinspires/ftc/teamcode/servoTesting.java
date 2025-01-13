@@ -31,126 +31,46 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 @Config
 public class servoTesting extends OpMode {
 
-    OpMode master;
 
     // outtake servos
-    Servo outTakePivotRight;
-    Servo outTakePivotLeft;
-    Servo outTakeClaw;
-    Servo outTakeFlip;
-    // intake servos
-    Servo intakePivotR;
-    Servo intakePivotL;
+    Servo curServo;
+    Gamepad previousGamepad1 = new Gamepad();
+    Gamepad previousGamepad2 = new Gamepad();
+    Gamepad currentGamepad1 = new Gamepad();
+    Gamepad currentGamepad2 = new Gamepad();
+    double rotatorConstant = 0;
 
-    // x - intake rotator
-    // y - outtake arm pivot
-    // a - outtake flip
-    // b - outtake claw
-
-    // right bumper - increase value
-    // left bumper - decrease value
-
-    // NOTE: Upon setting to the servo/servos to be tuned, they go to position 0, wherever that may be
+    // right bumper - add 0.1 to the servo
+    // left bumper - subtract 0.1 to the servo
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void init() {
-        // outtake servos
-        outTakeClaw = hardwareMap.servo.get(("otc"));
-        outTakeFlip = hardwareMap.servo.get(("otf"));
-        outTakePivotRight = hardwareMap.servo.get("otpr");
-        outTakePivotLeft = hardwareMap.servo.get("otpl");
-
-        // intake servos
-        intakePivotL = hardwareMap.servo.get(("itpl"));
-        intakePivotR = hardwareMap.servo.get(("itpr"));
+        curServo = hardwareMap.servo.get(("curServo"));
     }
 
     @Override
     public void loop() {
-        master.telemetry.addLine("YA JASON WHICH TUNING METHOD IS BEING USED NOW BUD");
-        if (master.gamepad2.x)
+        currentGamepad1.copy(gamepad1);
+        currentGamepad2.copy(gamepad2);
+
+        telemetry.addData("Servo position", rotatorConstant);
+        telemetry.update();
+        if (gamepad2.right_bumper && !previousGamepad2.right_bumper)
         {
-            double rotatorConstant = 0;
-            master.telemetry.addData("Servo position", rotatorConstant);
-            master.telemetry.addData("Servo Being Tuned: ", "intake pivots");
-            master.telemetry.update();
-            if (master.gamepad2.right_bumper)
-            {
-                rotatorConstant += 0.1;
-                intakePivotL.setPosition(rotatorConstant);
-                intakePivotR.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-            if (master.gamepad2.left_bumper)
-            {
-                rotatorConstant -= 0.1;
-                intakePivotL.setPosition(rotatorConstant);
-                intakePivotR.setPosition(rotatorConstant);
-                master.telemetry.addData("Servo position", rotatorConstant);
-                master.telemetry.update();
-            }
+            rotatorConstant += 0.1;
+            telemetry.update();
         }
-        if (master.gamepad2.y)
+        else if (gamepad2.left_bumper && !previousGamepad2.left_bumper)
         {
-            double rotatorConstant = 0;
-            master.telemetry.addData("Servo position", rotatorConstant);
-            master.telemetry.addData("Servo Being Tuned: ", "outtake pivots");
-            master.telemetry.update();
-            if (master.gamepad2.right_bumper)
-            {
-                rotatorConstant += 0.1;
-                outTakePivotLeft.setPosition(rotatorConstant);
-                outTakePivotRight.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-            if (master.gamepad2.left_bumper)
-            {
-                rotatorConstant -= 0.1;
-                outTakePivotLeft.setPosition(rotatorConstant);
-                outTakePivotRight.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
+            rotatorConstant -= 0.1;
+            telemetry.update();
         }
-        if (master.gamepad2.a)
-        {
-            double rotatorConstant = 0;
-            master.telemetry.addData("Servo position", rotatorConstant);
-            master.telemetry.addData("Servo Being Tuned: ", "outtake flip");
-            master.telemetry.update();
-            if (master.gamepad2.right_bumper)
-            {
-                rotatorConstant += 0.1;
-                outTakeFlip.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-            if (master.gamepad2.left_bumper)
-            {
-                rotatorConstant -= 0.1;
-                outTakeFlip.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-        }
-        if (master.gamepad2.b)
-        {
-            double rotatorConstant = 0;
-            master.telemetry.addData("Servo position", rotatorConstant);
-            master.telemetry.addData("Servo Being Tuned: ", "outtake claw grab");
-            master.telemetry.update();
-            if (master.gamepad2.right_bumper)
-            {
-                rotatorConstant += 0.1;
-                outTakeClaw.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-            if (master.gamepad2.left_bumper)
-            {
-                rotatorConstant -= 0.1;
-                outTakeClaw.setPosition(rotatorConstant);
-                master.telemetry.update();
-            }
-        }
+        curServo.setPosition(rotatorConstant);
+
+        previousGamepad1.copy(currentGamepad1);
+        previousGamepad2.copy(currentGamepad2);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
