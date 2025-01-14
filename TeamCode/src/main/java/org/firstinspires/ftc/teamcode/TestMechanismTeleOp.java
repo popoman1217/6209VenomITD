@@ -11,8 +11,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @Config
 public class TestMechanismTeleOp extends OpMode{
 
-    public static boolean[] motorPorts = new boolean[4];
-    public static boolean[] servoPorts = new boolean[6];
+    public static boolean[] motorPorts = new boolean[8];
+    public static boolean[] servoPorts = new boolean[12];
 
     ElapsedTime stateTime = new ElapsedTime();
 
@@ -50,6 +50,7 @@ public class TestMechanismTeleOp extends OpMode{
             }
             index++;
         }
+        telemetry.update();
     }
 
     void checkInit()
@@ -57,23 +58,19 @@ public class TestMechanismTeleOp extends OpMode{
         int index = 0;
         for (boolean port : motorPorts)
         {
-            if (port)
-            {
-                motors[index] = hardwareMap.dcMotor.get("motor" + index);
-                return;
-            }
+            telemetry.addData("in", port);
+            motors[index] = hardwareMap.dcMotor.get("motor" + index);
+            telemetry.addData("motor", motors[index]);
             index++;
         }
 
         index = 0;
         for (boolean port : servoPorts)
         {
-            if (port)
-            {
-                servos[index] = hardwareMap.servo.get("servo" + index);
-                return;
-            }
-            index++;
+            telemetry.addData("in", port);
+            servos[index] = hardwareMap.servo.get("servo" + index);
+            telemetry.addData("servo", servos[index]);
+            return;
         }
     }
 
@@ -94,7 +91,7 @@ public class TestMechanismTeleOp extends OpMode{
             testMotorAndServo();
 
         if (curState.equals("intake testing"))
-            inTakeMacroTest(motors[0], 1000);
+            inTakeMacroTest(motors[curMotor], 1000);
 
         telemetry.update();
     }
@@ -174,7 +171,7 @@ public class TestMechanismTeleOp extends OpMode{
     public void inTakeMacroTest(DcMotor intakeLiftMotor, int pos)
     {
         // intakeLiftMotor is just the motor in the array which corresponds to the intake lift at the moment.
-        intakeLiftMotor.setPower((pos - intakeLiftMotor.getCurrentPosition()) / 100.0 * .07);
+        intakeLiftMotor.setPower((pos - motors[5].getCurrentPosition()) / 100.0 * .07);
     }
 
     public void outTakeMacroTest(DcMotor outtakeLiftMotor, int pos)

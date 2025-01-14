@@ -73,13 +73,13 @@ public class Mechanisms {
 
 
     // done
-    public static double HIGH_OT_ARM_POS = 0.1;
-    public static double LOW_OT_ARM_POS = 0.4;
-    public static double NEUTRAL_OT_ARM_POS = 0.2;
+    public static double HIGH_OT_ARM_POS = 0.8;
+    public static double LOW_OT_ARM_POS = 0.6;
+    public static double NEUTRAL_OT_ARM_POS = 0.7;
 
-    public static double LOW_OT_FLIP_POS = 0;
-    public static double HIGH_OT_FLIP_POS = 0;
-    public static double NEUTRAL_OT_FLIP_POS = 0;
+    public static double LOW_OT_FLIP_POS = 0.3;
+    public static double HIGH_OT_FLIP_POS = .9;
+    public static double NEUTRAL_OT_FLIP_POS = .8;
 
     // done
     public static double GRAB_CLAW_POS = 0;
