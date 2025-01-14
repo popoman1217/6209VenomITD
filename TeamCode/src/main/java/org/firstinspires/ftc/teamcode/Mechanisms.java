@@ -157,9 +157,9 @@ public class Mechanisms {
         brakePosIT = inTakeLift.getCurrentPosition();
         brakePosOT = (outTakeLiftLeft.getCurrentPosition() + outTakeLiftLeft.getCurrentPosition()) / 2.0;
 
-        intakePivotL.setPosition(UP_IT_FLIP_POS - .15);
+        //intakePivotL.setPosition(UP_IT_FLIP_POS - .15);
 
-        hyperServo = opMode.hardwareMap.servo.get("elbowR");
+        //hyperServo = opMode.hardwareMap.servo.get("elbowR");
 
         master = opMode;
     }
