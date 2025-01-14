@@ -170,7 +170,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@Autonomous(name = "Odometry Localization", group = "Sensor")
+@Autonomous(name = "Odom Localization", group = "Sensor")
 public class localization extends LinearOpMode {
 
     // Hardware components
@@ -178,18 +178,22 @@ public class localization extends LinearOpMode {
     private IMU imu;
 
     // Position variables
-    private double robotX = 0, robotY = 0, robotHeading = 0; // curr x pos for robot, curr y pos, and curr heading
-    private double prevVertical = 0, prevHorizontal = 0; // previous x and previous y
+    private double robotX = 0, robotY = 0; // curr x pos and curr y pos for robot
+    private double prevRobotX = 0, prevRobotY = 0;
+    private double prevX = 0, prevY = 0; // previous x and previous y
+    private double prevTrueX = 0, prevTrueY = 0; //previous trueX and trueY
+    private double prevVelocityX = 0, prevVelocityY = 0; //previous velocityX and velocityY
     private double prevHeading = 0; // previous heading
+    private double prevHeadingVelocity = 0; //previous heading velocity
+    private double prevTime = 0; //previous startTime
 
     // Constants for odometry calculation
     private static final double TICKS_PER_REV = 2000; // GoBILDA encoder ticks per revolution, update
     private static final double WHEEL_DIAMETER = 2; // Diameter of odometry wheels (in inches)
     private static final double TICKS_PER_INCH = TICKS_PER_REV / (Math.PI * WHEEL_DIAMETER);
-    private static final double WEIGHT = 1.0 / 6.0; // Weight for Simpson's Rule, shows how to weight different trajectories
 
     // Thresholds and constants for error-handling
-    private static final double MAX_HEADING_CHANGE = Math.toRadians(10); // Max allowed change in heading (in radians)
+    private final double MAX_HEADING_CHANGE = Math.toRadians(10); // Max allowed change in heading (in radians)
     private static final double IMU_CALIBRATION_THRESHOLD = 0.1; // Allowable IMU drift before recalibration
     private static final double MAX_ENCODER_TICKS_PER_UPDATE = 1000; // Max allowed ticks per update to detect encoder errors
 
@@ -210,12 +214,15 @@ public class localization extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
+            // Get current time for velocity and acceleration values
+            double startTime = System.nanoTime() * 1E9;
+
             // Read current encoder values
-            double currentVertical = verticalOdom.getCurrentPosition();
-            double currentHorizontal = horizontalOdom.getCurrentPosition();
+            double currentX = verticalOdom.getCurrentPosition();
+            double currentY = horizontalOdom.getCurrentPosition();
           
             // Get the robot's current heading (in radians)
-            double currentHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+            double currentHeading = -imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
             // Step 1: Error Handling - Check for large/rapid changes in heading (sharp turns)
             double deltaHeading = currentHeading - prevHeading;
@@ -224,76 +231,81 @@ public class localization extends LinearOpMode {
                 deltaHeading = 0; // Ignore large changes to avoid calculation errors
             }
 
-            // Step 2: Error Handling - Check for outlier encoder values (noise or error in encoder data)
-            double deltaVertical = currentVertical - prevVertical;
-            double deltaHorizontal = currentHorizontal - prevHorizontal;
+            // Step 2: Error Handling - Check f or outlier encoder values (noise or error in encoder data)
+            double deltaX = currentX - prevX;
+            double deltaY = currentY - prevY;
             // Convert the change in encoder ticks to inches
-            deltaVertical /= TICKS_PER_INCH;
-            deltaHorizontal /= TICKS_PER_INCH;
+            deltaX /= TICKS_PER_INCH;
+            deltaY /= TICKS_PER_INCH;
 
-            if (Math.abs(deltaVertical) > MAX_ENCODER_TICKS_PER_UPDATE || Math.abs(deltaHorizontal) > MAX_ENCODER_TICKS_PER_UPDATE) {
+            if (Math.abs(deltaX) > MAX_ENCODER_TICKS_PER_UPDATE || Math.abs(deltaY) > MAX_ENCODER_TICKS_PER_UPDATE) {
                 telemetry.addData("Warning", "Encoder Ticks Too Large - Possible Error Detected");
-                deltaVertical = 0; // Ignore outliers to avoid incorrect position updates
-                deltaHorizontal = 0;
+                deltaX = 0; // Ignore outliers to avoid incorrect position updates
+                deltaY = 0;
             }
 
-
             // Step 3: Arc handling - Use average heading for position update
-            double radiusX;
-            double radiusY;
-            if (deltaHeading != 0){
-                radiusX = deltaVertical / deltaHeading;
-                radiusY = deltaHorizontal / deltaHeading;
-            } else {
-                radiusX = deltaVertical;
-                radiusY = deltaHorizontal;
+            double radiusX; double radiusY; double relDeltaX; double relDeltaY;
+            if (deltaHeading != 0) {
+                radiusX = deltaX / deltaHeading;
+                radiusY = deltaY / deltaHeading;
+
+                relDeltaX = radiusX * Math.sin(deltaHeading) - radiusY * (1 - Math.cos(deltaHeading));
+                relDeltaY = radiusY * Math.sin(deltaHeading) - radiusX * (1 - Math.cos(deltaHeading));
             }
-            double relDeltaX = radiusX * Math.sin(deltaHeading) - radiusY * (1 - Math.cos(deltaHeading));
-            double relDeltaY = radiusY * Math.sin(deltaHeading) + radiusX * (1 - Math.cos(deltaHeading));
+            else{
+                relDeltaX = deltaX;
+                relDeltaY = deltaY;
+            }
 
             double headingAverage = (prevHeading + currentHeading) / 2.0;
-            double deltaX = relDeltaX * Math.cos(headingAverage) - relDeltaY * Math.sin(headingAverage) - prevVertical;
-            double deltaY = relDeltaY * Math.cos(headingAverage) + relDeltaX * Math.sin(headingAverage) - prevHorizontal;
+            double trueX = relDeltaX * Math.cos(headingAverage) - relDeltaY * Math.sin(headingAverage) + prevTrueX;
+            double trueY = relDeltaY * Math.cos(headingAverage) - relDeltaX * Math.sin(headingAverage) + prevTrueY;
 
-            // Update robot's global position
-            robotX += deltaX;
-            robotY += deltaY;
-          
-            // Convert the change in encoder ticks to inches
-            deltaVertical /= TICKS_PER_INCH;
-            deltaHorizontal /= TICKS_PER_INCH;
-
-            // Step 3: Arc handling - Use average heading for position update
-            double headingAverage = (prevHeading + currentHeading) / 2.0;
-            double deltaX = deltaVertical * Math.cos(headingAverage) - deltaHorizontal * Math.sin(headingAverage);
-            double deltaY = deltaVertical * Math.sin(headingAverage) + deltaHorizontal * Math.cos(headingAverage);
-
-            // Step 4: Simpson's Rule Integration for smoother movement approximation
-            double deltaXSimpson = WEIGHT * ((prevVertical + 4.0 * deltaX + prevVertical) / 3.0);
-            double deltaYSimpson = WEIGHT * ((prevHorizontal + 4.0 * deltaY + prevHorizontal) / 3.0);
-
-            // Update robot's global position
-            robotX += deltaXSimpson;
-            robotY += deltaYSimpson;
-
-            robotHeading = currentHeading;
-
-            // Step 5: IMU Calibration Handling - Detect if the IMU drifts too much
+            // Step 4: IMU Calibration Handling - Detect if the IMU drifts too much
             if (Math.abs(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)) > IMU_CALIBRATION_THRESHOLD) {
                 imu.resetYaw(); // Reset IMU if it drifts beyond acceptable range
                 telemetry.addData("IMU", "Recalibrating due to drift");
             }
 
+            //Step 5: Find velocity and acceleration values
+            double deltaTime = startTime - prevTime;
+            double velocityX = (trueX - robotX) / deltaTime;
+            double velocityY = (trueY - robotY) / deltaTime;
+            double headingVelocity = (currentHeading - prevHeading) / deltaTime;
 
-            // Step 6: Store previous values for the next loop iteration
-            prevVertical = currentVertical;
-            prevHorizontal = currentHorizontal;
+            double accelX = (velocityX - prevVelocityX) / deltaTime;
+            double accelY = (velocityY - prevVelocityY) / deltaTime;
+            double headingAccel = (headingVelocity - prevHeadingVelocity) / deltaTime;
+
+            double constAccelHeading = headingAccel * Math.pow(deltaTime, 2) + headingVelocity * deltaTime + currentHeading; // this has no purpose other than saving space
+
+            double constAccelX = (2 * accelX * deltaTime + velocityX) * Math.cos(constAccelHeading) - (2 * accelY * deltaTime + velocityY) * Math.sin(constAccelHeading);
+            double constAccelY = (2 * accelY * deltaTime + velocityY) * Math.cos(constAccelHeading) - (2 * accelX * deltaTime + velocityX) * Math.sin(constAccelHeading);
+
+            //Step 6: Update values and store previous values for next loop iteration
+            robotX = (constAccelX / 2) * Math.pow(deltaTime, 2) + velocityX * deltaTime + prevRobotX;
+            robotY = (constAccelY / 2) * Math.pow(deltaTime, 2) + velocityY * deltaTime + prevRobotY;
+
+            prevX = currentX;
+            prevY = currentY;
+            prevTrueX = trueX;
+            prevTrueY = trueY;
+            prevRobotX = robotX;
+            prevRobotY = robotY;
+            prevVelocityX = velocityX;
+            prevVelocityY = velocityY;
+            prevHeadingVelocity = headingVelocity;
             prevHeading = currentHeading;
+            prevTime = startTime;
+
 
             // Output telemetry data for debugging
             telemetry.addData("X Position", robotX);
             telemetry.addData("Y Position", robotY);
-            telemetry.addData("Heading", Math.toDegrees(robotHeading)); // Display heading in degrees
+            telemetry.addData("X Velocity", velocityX);
+            telemetry.addData("Y Velocity", velocityY);
+            telemetry.addData("Heading", Math.toDegrees(currentHeading)); // Display heading in degrees
             telemetry.update();
         }
     }
@@ -446,4 +458,4 @@ public class localization extends LinearOpMode {
     }
 }
 */
-}*/
+
