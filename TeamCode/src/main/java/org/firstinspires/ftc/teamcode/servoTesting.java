@@ -34,6 +34,7 @@ public class servoTesting extends OpMode {
 
     // outtake servos
     Servo curServo;
+    Servo claw;
     Gamepad previousGamepad1 = new Gamepad();
     Gamepad previousGamepad2 = new Gamepad();
     Gamepad currentGamepad1 = new Gamepad();
@@ -61,11 +62,19 @@ public class servoTesting extends OpMode {
         {
             rotatorConstant += 0.1;
             telemetry.update();
+            if (rotatorConstant > 1)
+            {
+                rotatorConstant = 1;
+            }
         }
         else if (gamepad2.left_bumper && !previousGamepad2.left_bumper)
         {
             rotatorConstant -= 0.1;
             telemetry.update();
+            if (rotatorConstant < 0)
+            {
+                rotatorConstant = 0;
+            }
         }
         curServo.setPosition(rotatorConstant);
 

@@ -73,22 +73,22 @@ public class Mechanisms {
 
 
     // done
-    public static double HIGH_OT_ARM_POS = 0.8;
-    public static double LOW_OT_ARM_POS = 0.6;
-    public static double NEUTRAL_OT_ARM_POS = 0.7;
+    public static double HIGH_OT_ARM_POS = 0.4;
+    public static double LOW_OT_ARM_POS = 0.3;
+    public static double NEUTRAL_OT_ARM_POS = 0.5;
 
     public static double LOW_OT_FLIP_POS = 0.3;
-    public static double HIGH_OT_FLIP_POS = .9;
-    public static double NEUTRAL_OT_FLIP_POS = .8;
+    public static double HIGH_OT_FLIP_POS = 1;
+    public static double NEUTRAL_OT_FLIP_POS = .6;
 
     // done
     public static double GRAB_CLAW_POS = 0;
     public static double OPEN_CLAW_POS = 0.3;
     public static double NEUTRAL_CLAW_POS = 0.2;
 
-    public static double HIGH_IT_FLIP_POS = 0;
-    public static double LOW_IT_FLIP_POS = 0;
-    public static double NEUTRAL_IT_FLIP_POS = 0;
+    public static double HIGH_IT_FLIP_POS = 0.95;
+    public static double LOW_IT_FLIP_POS = 0.32;
+    public static double NEUTRAL_IT_FLIP_POS = 0.7;
 
     ElapsedTime intakeToTransfer = new ElapsedTime();
 
@@ -169,7 +169,7 @@ public class Mechanisms {
     public void setBaseOuttakeLift()
     {
         outTakeLiftLeft.setPower(-master.gamepad2.left_stick_y);
-        outTakeLiftRight.setPower(master.gamepad2.left_stick_y);
+        outTakeLiftRight.setPower(-master.gamepad2.left_stick_y);
     }
     ////////////////////////////////////////////////////////////////////////////////
     public void setBaseIntakeLift()
@@ -243,7 +243,7 @@ public class Mechanisms {
 
     ////////////////////////////////////////////////////////////////////////////////
     public void setOutTakeClawGrab(){
-        if (master.gamepad2.y && lastClawTime < totalTime.milliseconds() - 500)
+        if (master.gamepad2.y)
         {
             master.telemetry.addData("tt", totalTime.milliseconds());
             if (!OTGrabbed)

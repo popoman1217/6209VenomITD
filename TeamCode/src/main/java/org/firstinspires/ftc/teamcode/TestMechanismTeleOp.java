@@ -16,7 +16,6 @@ public class TestMechanismTeleOp extends OpMode{
 
     ElapsedTime stateTime = new ElapsedTime();
 
-
     int curMotor = 0;
     int curServo = 0;
 
@@ -70,18 +69,19 @@ public class TestMechanismTeleOp extends OpMode{
             telemetry.addData("in", port);
             servos[index] = hardwareMap.servo.get("servo" + index);
             telemetry.addData("servo", servos[index]);
-            return;
+            index++;
         }
     }
 
     @Override
     public void loop() {
-        if (gamepad2.a)
+        servos[4].setPosition(.35);
+        if (gamepad1.a)
         {
             curState = "intake testing";
             switchState();
         }
-        else if (gamepad2.b)
+        else if (gamepad1.b)
         {
             curState = "general testing";
             switchState();
