@@ -258,21 +258,10 @@ public class localization extends LinearOpMode {
                 relDeltaY = deltaY;
             }
 
-            double headingAverage = (prevHeading + currentHeading) / 2.0;
-            double trueX = relDeltaX * Math.cos(headingAverage) - relDeltaY * Math.sin(headingAverage) + prevTrueX;
-            double trueY = relDeltaY * Math.cos(headingAverage) - relDeltaX * Math.sin(headingAverage) + prevTrueY;
-
-            // Step 4: IMU Calibration Handling - Detect if the IMU drifts too much
-            if (Math.abs(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)) > IMU_CALIBRATION_THRESHOLD) {
-                imu.resetYaw(); // Reset IMU if it drifts beyond acceptable range
-                telemetry.addData("IMU", "Recalibrating due to drift");
-            }
-
-            //Step 5: Find velocity and acceleration values
             double deltaTime = startTime - prevTime;
-            double velocityX = (trueX - robotX) / deltaTime;
-            double velocityY = (trueY - robotY) / deltaTime;
-            double headingVelocity = (currentHeading - prevHeading) / deltaTime;
+            double velocityX = relDeltaX / deltaTime;
+            double velocityY = relDeltaY / deltaTime;
+            double headingVelocity = deltaHeading / deltaTime;
 
             double accelX = (velocityX - prevVelocityX) / deltaTime;
             double accelY = (velocityY - prevVelocityY) / deltaTime;
@@ -283,9 +272,21 @@ public class localization extends LinearOpMode {
             double constAccelX = (2 * accelX * deltaTime + velocityX) * Math.cos(constAccelHeading) - (2 * accelY * deltaTime + velocityY) * Math.sin(constAccelHeading);
             double constAccelY = (2 * accelY * deltaTime + velocityY) * Math.cos(constAccelHeading) - (2 * accelX * deltaTime + velocityX) * Math.sin(constAccelHeading);
 
-            //Step 6: Update values and store previous values for next loop iteration
+
+            double headingAverage = (prevHeading + currentHeading) / 2.0;
             robotX = (constAccelX / 2) * Math.pow(deltaTime, 2) + velocityX * deltaTime + prevRobotX;
             robotY = (constAccelY / 2) * Math.pow(deltaTime, 2) + velocityY * deltaTime + prevRobotY;
+
+            // Step 4: IMU Calibration Handling - Detect if the IMU drifts too much
+            if (Math.abs(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)) > IMU_CALIBRATION_THRESHOLD) {
+                imu.resetYaw(); // Reset IMU if it drifts beyond acceptable range
+                telemetry.addData("IMU", "Recalibrating due to drift");
+            }
+
+            //Step 5: Find velocity and acceleration values
+            
+            //Step 6: Update values and store previous values for next loop iteration
+           
 
             prevX = currentX;
             prevY = currentY;
