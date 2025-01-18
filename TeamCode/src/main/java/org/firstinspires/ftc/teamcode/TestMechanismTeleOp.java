@@ -75,13 +75,13 @@ public class TestMechanismTeleOp extends OpMode{
 
     @Override
     public void loop() {
-        servos[4].setPosition(.35);
-        if (gamepad1.a)
+        //servos[4].setPosition(.35);
+        if (gamepad1.x)
         {
             curState = "intake testing";
             switchState();
         }
-        else if (gamepad1.b)
+        else if (gamepad1.y)
         {
             curState = "general testing";
             switchState();

@@ -52,8 +52,8 @@ public class DrivetrainControllers {
         frontRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
         master = opMode;
     }
 
@@ -168,6 +168,8 @@ public class DrivetrainControllers {
             double x = master.gamepad1.left_stick_x * 1.1;
             double rx = -master.gamepad1.right_stick_x;
 
+            master.telemetry.addData("y", y);
+
 
 
             double trueDiff = sensors.getTrueAngleDiff(initialAngle);
@@ -193,7 +195,7 @@ public class DrivetrainControllers {
         else {
             double y = -master.gamepad1.left_stick_y;
             double x = master.gamepad1.left_stick_x * 1.1;
-            double rx = -master.gamepad1.right_stick_x;
+            double rx = master.gamepad1.right_stick_x;
 
             master.telemetry.addData("y", y);
             master.telemetry.addData("x",x);
@@ -207,7 +209,7 @@ public class DrivetrainControllers {
 
             double multiplier = Math.max(1 - master.gamepad1.right_trigger, .25) ;
 
-            frontLeftMotor.setPower(acceleratorFL(frontLeftPower * multiplier) - adder);
+            frontLeftMotor.setPower(-acceleratorFL(frontLeftPower * multiplier) - adder);
             backLeftMotor.setPower(-acceleratorBL(backLeftPower * multiplier) - adder);
             frontRightMotor.setPower(-acceleratorFR(frontRightPower * multiplier) + adder);
             backRightMotor.setPower(-acceleratorBR(backRightPower * multiplier) + adder);
