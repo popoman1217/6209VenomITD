@@ -200,8 +200,8 @@ public class localization extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize odometry wheels
-        verticalOdom = hardwareMap.get(DcMotorEx.class, "backL");
-        horizontalOdom = hardwareMap.get(DcMotorEx.class, "frontR");
+        verticalOdom = hardwareMap.get(DcMotorEx.class, "itl");
+        horizontalOdom = hardwareMap.get(DcMotorEx.class, "otll");
         imu = hardwareMap.get(IMU.class, "imu");
 
         verticalOdom.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -290,8 +290,6 @@ public class localization extends LinearOpMode {
 
             prevX = currentX;
             prevY = currentY;
-            prevTrueX = trueX;
-            prevTrueY = trueY;
             prevRobotX = robotX;
             prevRobotY = robotY;
             prevVelocityX = velocityX;

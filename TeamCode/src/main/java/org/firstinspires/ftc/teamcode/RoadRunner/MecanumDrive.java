@@ -67,12 +67,12 @@ public final class MecanumDrive {
         // drive model parameters
         public double inPerTick = 1.0 / 550.0;
         public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 0;
+        public double trackWidthTicks = 4640.253885281493;
 
         // feedforward parameters (in tick units)
-        public double kS = 0;
-        public double kV = 0;
-        public double kA = 0;
+        public double kS = 2.3358406467274655;
+        public double kV = 0.0002323280123742727;
+        public double kA = 0.00005;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 50;
@@ -84,13 +84,13 @@ public final class MecanumDrive {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 0.0;
-        public double lateralGain = 0.0;
-        public double headingGain = 0.0; // shared with turn
+        public double axialGain = 4.0;
+        public double lateralGain = 6.0;
+        public double headingGain = 3.0; // shared with turn
 
-        public double axialVelGain = 0.0;
-        public double lateralVelGain = 0.0;
-        public double headingVelGain = 0.0; // shared with turn
+        public double axialVelGain = 0.4;
+        public double lateralVelGain = 0.2;
+        public double headingVelGain = 0.1; // shared with turn
     }
 
     public static Params PARAMS = new Params();
@@ -231,12 +231,13 @@ public final class MecanumDrive {
 
         // TODO: reverse motor directions if needed
         //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         lazyImu = new LazyImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
-                PARAMS.logoFacingDirection.UP, PARAMS.usbFacingDirection.FORWARD));
+                PARAMS.logoFacingDirection.LEFT, PARAMS.usbFacingDirection.BACKWARD));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -258,6 +259,26 @@ public final class MecanumDrive {
         leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
         rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
+    }
+
+    public DcMotorEx returnMotor(String name)
+    {
+        if (name.equals("fl"))
+        {
+            return leftFront;
+        }
+        else if (name.equals("fr"))
+        {
+            return rightFront;
+        }
+        else if (name.equals("bl"))
+        {
+            return leftBack;
+        }
+        else
+        {
+            return rightBack;
+        }
     }
 
     public final class FollowTrajectoryAction implements Action {

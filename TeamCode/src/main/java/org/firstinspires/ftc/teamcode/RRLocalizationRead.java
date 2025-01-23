@@ -25,8 +25,11 @@ public class RRLocalizationRead {
 
     public Pose2d returnPose()
     {
-        drive.updatePoseEstimate();
-        return new Pose2d(new Vector2d(drive.pose.position.x, drive.pose.position.y), Math.toDegrees(drive.pose.heading.toDouble()));
+        if (drive != null) {
+            drive.updatePoseEstimate();
+            return new Pose2d(new Vector2d(drive.pose.position.x, drive.pose.position.y), Math.toDegrees(drive.pose.heading.toDouble()));
+        }
+        return new Pose2d(new Vector2d(0,0), 0);
         // Pseudo code for localizer.update() and return Pose
     }
 

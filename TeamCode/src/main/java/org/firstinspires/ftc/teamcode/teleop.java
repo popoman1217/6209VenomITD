@@ -58,13 +58,13 @@ public class teleop extends OpMode {
         sensors.init(this);
 
         mechanisms = new Mechanisms();
-        mechanisms.init(this, driveTrain);
+        mechanisms.init(this, driveTrain.frontLeftMotor, driveTrain.backRightMotor, driveTrain.frontRightMotor);
 
         fileRead = new FileRead();
         fileRead.init(this);
 
-        localizationRead = new RRLocalizationRead();
-        localizationRead.initLocalization(hardwareMap);
+        //localizationRead = new RRLocalizationRead();
+        //localizationRead.initLocalization(hardwareMap);
 
     }
 
@@ -81,7 +81,7 @@ public class teleop extends OpMode {
     @Override
     public void loop() {
 
-        telemetry.addData("Pos: ", localizationRead.returnPose());
+        //telemetry.addData("Pos: ", localizationRead.returnPose());
         if (gamepad1.left_bumper && gamepad1.right_bumper && gamepad1.dpad_up && totalTime.milliseconds() > lastTestTime + 500)
         {
             if (testingActive)
@@ -97,7 +97,7 @@ public class teleop extends OpMode {
             //mechanisms.servotesting();
         }
         else {
-            mechanisms.update(driveTrain);
+            mechanisms.update();
             mechanisms.transferMacro();
             mechanisms.setIntakeSpinners();
             mechanisms.setBaseIntakeLift();
@@ -118,6 +118,7 @@ public class teleop extends OpMode {
             //fileRead.readFile();
 
             driveTrain.runMotors(sensors);
+            //driveTrain.runMotorsConstantSpeed(.3,.3,.3,.3);
             telemetry.update();
         }
     }

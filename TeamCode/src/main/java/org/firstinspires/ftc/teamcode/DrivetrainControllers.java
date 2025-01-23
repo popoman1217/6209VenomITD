@@ -31,10 +31,10 @@ public class DrivetrainControllers {
     double prevTimeBR = 0;
 
     // Motors for drivetrain
-    DcMotor frontLeftMotor;
-    DcMotor backLeftMotor;
-    DcMotor frontRightMotor;
-    DcMotor backRightMotor;
+    public DcMotor frontLeftMotor;
+    public DcMotor backLeftMotor;
+    public DcMotor frontRightMotor;
+    public DcMotor backRightMotor;
 
     ElapsedTime totalTime = new ElapsedTime();
 
@@ -53,6 +53,7 @@ public class DrivetrainControllers {
         backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         master = opMode;
     }

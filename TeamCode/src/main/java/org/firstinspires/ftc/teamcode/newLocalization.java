@@ -31,10 +31,10 @@ public class newLocalization extends LinearOpMode {
     private static final double MAX_ENCODER_TICKS_PER_UPDATE = 1000; // Max allowed ticks per update to detect encoder errors
 
     public void runOpMode() throws InterruptedException{
-
+// 23909
         // Initialize odometry wheels
-        verticalOdom = hardwareMap.get(DcMotorEx.class, "backL");
-        horizontalOdom = hardwareMap.get(DcMotorEx.class, "frontR");
+        verticalOdom = hardwareMap.get(DcMotorEx.class, "otll"); // par exp 2
+        horizontalOdom = hardwareMap.get(DcMotorEx.class, "itl"); // perp exp 3
         imu = hardwareMap.get(IMU.class, "imu");
 
         verticalOdom.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);

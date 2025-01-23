@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -83,10 +84,19 @@ public class FollowPath
 
 
     // Start is called before the first frame update
-    void Start()
+    void Start(OpMode opMode, RRLocalizationRead rr)
     {
+        posReader = rr;
+
+        File file = new File(fileName);
         // Just parses through the file and sets each waypoint's (starting at wp0) data to the various arrays
-        scan = new Scanner(fileName);
+        try{
+            scan = new Scanner(file);
+        }
+        catch (FileNotFoundException e)
+        {
+            opMode.telemetry.addData("error", e);
+        }
         activeFollower = true;
         int index = 0;
         dydxs = new ArrayList<>();
@@ -108,9 +118,10 @@ public class FollowPath
         combinedDist = 0;
         // This is the local variable that is the current trajectory of the path that it is dealing with in the file.
         int curTraj = 0;
-        while (scan.hasNext())
+        while (scan.hasNextLine())
         {
             String curString = scan.nextLine();
+            //System.out.println(curString);
             // If it reaches a BREAK in the file, it creates the current trajectory to increase and to add a new list of points to the lists.
             if (curString.equals("BREAK"))
             {
@@ -144,7 +155,7 @@ public class FollowPath
                 } else if (data.startsWith("fieldPos:")) {
                     String vectorData = data.split(":")[1].trim();
                     // Extract the x and y values from the parentheses
-                    vectorData = vectorData.substring(1, vectorData.length() - 1); // Remove parentheses
+                    vectorData = vectorData.substring(1, vectorData.length() - 2); // Remove parentheses
                     String[] coordinates = vectorData.split(", ");
                     double x = Double.parseDouble(coordinates[0]);
                     double y = Double.parseDouble(coordinates[1]);
@@ -164,7 +175,15 @@ public class FollowPath
         curWayPointPoss = wayPointPoss.get(trajectoryNumber);
         curThetas = thetas.get(trajectoryNumber);
 
-        prevIntersect = new double[]{wayPointPoss.get(0).get(0).x, wayPointPoss.get(0).get(0).y};
+        try {
+            prevIntersect = new double[]{wayPointPoss.get(0).get(0).x, wayPointPoss.get(0).get(0).y};
+        }
+        catch (Exception e) {
+            prevIntersect = new double[]{0, 0};
+            opMode.telemetry.addData("", wayPointPoss.get(0));
+        }
+        Pose2d pos = rr.returnPose();
+        fieldPos = new Vector2(pos.position.x, pos.position.y);
         curAngle = getWeightedAngle();
     }
 
@@ -485,7 +504,7 @@ public class FollowPath
     }
 
     // Update is called once per frame
-    void Update() {
+    public void update() {
         // Hack for quickly and consistently increasing the position of the robot
 
 
@@ -510,11 +529,11 @@ public class FollowPath
 
 
         if (Time.time > prevTime + 1 / 30) {
-            updatePos();
             prevTime = Time.time;
         }
-        
+
         */
+        updatePos();
     }
 }
 
@@ -557,3 +576,5 @@ public class FollowPath
 
 
         //float slope = -1f /
+
+         */
