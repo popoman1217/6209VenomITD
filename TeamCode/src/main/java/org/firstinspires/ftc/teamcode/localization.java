@@ -215,7 +215,7 @@ public class localization extends LinearOpMode {
 
         while (opModeIsActive()) {
             // Get current time for velocity and acceleration values
-            double startTime = System.nanoTime() * 1E9;
+            double startTime = System.nanoTime() / 1E9;
 
             // Read current encoder values
             double currentX = verticalOdom.getCurrentPosition();
