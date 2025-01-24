@@ -187,6 +187,11 @@ public class FollowPath
         curAngle = getWeightedAngle();
     }
 
+    public Vector2 getFieldPos()
+    {
+        return fieldPos;
+    }
+
 
     // This is the number of trajectories in the path.
     public int getTotalTrajectories()

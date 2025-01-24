@@ -1,19 +1,3 @@
-pos:0, dYdX:-0.50023; totalDist:0; dist:0; theta:-63.42441; fieldPos:(4.350472, -53.09996);
-pos:1, dYdX:-0.7650542; totalDist:1.415105; dist:1.415105; theta:-52.58205; fieldPos:(3.08488, -52.46687);
-pos:2, dYdX:-1.000458; totalDist:8.187456; dist:6.772351; theta:-44.98689; fieldPos:(-2.293885, -48.35182);
-pos:3, dYdX:-0.9170821; totalDist:12.66302; dist:4.475567; theta:-47.47662; fieldPos:(-5.457865, -45.18639);
-pos:4, dYdX:-0.4729421; totalDist:17.81469; dist:5.151666; theta:-64.68857; fieldPos:(-9.254651, -41.70443);
-pos:5, dYdX:-0.545701; totalDist:37.06464; dist:19.24995; theta:-61.37865; fieldPos:(-26.65655, -33.47434);
-pos:6, dYdX:-0.8575358; totalDist:41.02951; dist:3.964868; theta:-49.38573; fieldPos:(-30.13693, -31.57509);
-pos:7, dYdX:-1.174448; totalDist:43.94713; dist:2.917623; theta:-40.41319; fieldPos:(-32.35173, -29.67583);
-pos:8, dYdX:-1.375618; totalDist:55.17219; dist:11.22506; theta:-36.01513; fieldPos:(-39.62888, -21.12919);
-pos:9, dYdX:-1.000453; totalDist:59.47696; dist:4.304764; theta:-44.98702; fieldPos:(-42.16008, -17.64723);
-pos:10, dYdX:-1.889744; totalDist:62.16229; dist:2.685334; theta:-27.88655; fieldPos:(-44.05846, -15.74798);
-pos:11, dYdX:-19.00955; totalDist:68.2505; dist:6.08821; theta:-3.011232; fieldPos:(-46.90606, -10.36676);
-pos:12, dYdX:6.003013; totalDist:74.27312; dist:6.022623; theta:9.457645; fieldPos:(-47.22244, -4.352455);
-pos:13, dYdX:3.001326; totalDist:76.19854; dist:1.925425; theta:18.42736; fieldPos:(-46.90606, -2.453201);
-pos:14, dYdX:1.333934; totalDist:80.20234; dist:4.003801; theta:36.85752; fieldPos:(-45.64045, 1.345306);
-pos:15, dYdX:1.000462; totalDist:81.78478; dist:1.582443; theta:44.98677; fieldPos:(-44.69125, 2.611465);
-pos:16, dYdX:0.7503399; totalDist:84.02257; dist:2.237782; theta:53.11765; fieldPos:(-43.10927, 4.194181);
-pos:17, dYdX:0; totalDist:85.60483; dist:1.582261; theta:0; fieldPos:(-41.84367, 5.143813);
+pos:0, dYdX:-204.9931; totalDist:0; dist:0; theta:-0.2797574; fieldPos:(18.55149, -24.11592);
+pos:1, dYdX:0; totalDist:64.73089; dist:64.73089; theta:0; fieldPos:(18.23572, 40.6142);
 BREAK

@@ -11,6 +11,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.RoadRunner.MecanumDrive;
+
 import java.util.List;
 
 public class DrivetrainControllers {
@@ -54,6 +56,16 @@ public class DrivetrainControllers {
 
         backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        master = opMode;
+    }
+
+    public void initMotorsRR(OpMode opMode, RRLocalizationRead rr)
+    {
+        frontLeftMotor = rr.returnDCMotorBL(MecanumDrive.MotorNames.fl); // port 0
+        backLeftMotor = rr.returnDCMotorBL(MecanumDrive.MotorNames.bl); // port 2
+        frontRightMotor = rr.returnDCMotorBL(MecanumDrive.MotorNames.fr); // port 1
+        backRightMotor = rr.returnDCMotorBL(MecanumDrive.MotorNames.br); // port 3
 
         master = opMode;
     }

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -21,6 +22,19 @@ public class RRLocalizationRead {
         totalTime = new ElapsedTime();
         // Pseudo code for localizer initiation.
         // Should be something like Standardlocalizer localizer = new stsndard(hardwaremap);
+    }
+
+    public void initLocalization(HardwareMap hardwareMap, Pose2d pose2d)
+    {
+        drive = new MecanumDrive(hardwareMap, pose2d);
+        totalTime = new ElapsedTime();
+        // Pseudo code for localizer initiation.
+        // Should be something like Standardlocalizer localizer = new stsndard(hardwaremap);
+    }
+
+    public DcMotor returnDCMotorBL(MecanumDrive.MotorNames name)
+    {
+        return drive.returnMotor(name);
     }
 
     public Pose2d returnPose()
