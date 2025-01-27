@@ -16,6 +16,9 @@ public class RRLocalizationRead {
     double curVel = 0;
     double prevTime = 0;
 
+    // Initial position of x so that you can take that and just subtract what has been changed because it's negative.
+    double initialX = 0;
+
     public void initLocalization(HardwareMap hardwareMap)
     {
         drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
@@ -26,7 +29,8 @@ public class RRLocalizationRead {
 
     public void initLocalization(HardwareMap hardwareMap, Pose2d pose2d)
     {
-        drive = new MecanumDrive(hardwareMap, pose2d);
+        initialX = pose2d.position.x;
+        drive = new MecanumDrive(hardwareMap, new Pose2d(pose2d.position.y, pose2d.position.x, pose2d.heading.toDouble()));
         totalTime = new ElapsedTime();
         // Pseudo code for localizer initiation.
         // Should be something like Standardlocalizer localizer = new stsndard(hardwaremap);
@@ -41,7 +45,9 @@ public class RRLocalizationRead {
     {
         if (drive != null) {
             drive.updatePoseEstimate();
-            return new Pose2d(new Vector2d(drive.pose.position.x, drive.pose.position.y), Math.toDegrees(drive.pose.heading.toDouble()));
+            Pose2d rawPos = new Pose2d(new Vector2d(drive.pose.position.y, drive.pose.position.x), Math.toDegrees(drive.pose.heading.toDouble()));
+            // This is to get the direction of change on the x correct without messing with roadrunner's localization.
+            return new Pose2d(initialX * 2 - rawPos.position.x, rawPos.position.y, rawPos.heading.toDouble());
         }
         return new Pose2d(new Vector2d(0,0), 0);
         // Pseudo code for localizer.update() and return Pose

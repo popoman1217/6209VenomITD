@@ -35,6 +35,7 @@ public class Sensors {
                 RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
                 RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD));
         imu.initialize(parameters);
+        imu.resetYaw();
 
         master = opMode;
     }
