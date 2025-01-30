@@ -50,6 +50,8 @@ public class Mechanisms {
     double kpOT = 0;
     double kpIT = 0;
 
+    boolean isStraight = true;
+
     // Mechanism stuff
     public double lastClawTime;
 
@@ -93,26 +95,30 @@ public class Mechanisms {
 
 
     // done
-    public static double HIGH_OT_ARM_POS = 0.4;
-    public static double LOW_OT_ARM_POS = 0.8;
-    public static double NEUTRAL_OT_ARM_POS = 0.7;
+    public static double HIGH_OT_ARM_POSL = 0.3;
+    public static double LOW_OT_ARM_POSL = 0;
+    public static double NEUTRAL_OT_ARM_POSL = 0.1;
 
-    public static double LOW_OT_FLIP_POS = 0.3;
-    public static double HIGH_OT_FLIP_POS = 1;
-    public static double NEUTRAL_OT_FLIP_POS = .8;
-    public static double HIGH_OT_ARM_POSR = 1;
-    public static double LOW_OT_ARM_POSR = .62;
+    public static double HIGH_OT_ARM_POSR = 0.05;
+    public static double LOW_OT_ARM_POSR = .35;
+    public static double NEUTRAL_OT_ARM_POSR = .1;
+
+    public static double STRAIGHT_OT_FLIP_POS = 0.6;
+    public static double BENT_OT_FLIP_POS = .3;
+    //public static double NEUTRAL_OT_FLIP_POS = .8;
+
 
     // done
     public static double GRAB_CLAW_POS = 0;
     public static double OPEN_CLAW_POS = 0.3;
     public static double NEUTRAL_CLAW_POS = 0.2;
 
-    public static double HIGH_IT_FLIP_POS = 0.95;
-    public static double LOW_IT_FLIP_POS = 0.35;
-    public static double HIGH_IT_FLIP_POSR = 0.2;
-    public static double LOW_IT_FLIP_POSR = 0.8;
-    public static double NEUTRAL_IT_FLIP_POS = 0.7;
+    public static double HIGH_IT_FLIP_POSR = 1;
+    public static double LOW_IT_FLIP_POSR = 0.41;
+    public static double HIGH_IT_FLIP_POSL = 0.38;
+    public static double LOW_IT_FLIP_POSL = 0.95;
+    public static double NEUTRAL_IT_FLIP_POSR = 0.78;
+    public static double NEUTRAL_IT_FLIP_POSL = 0.58;
 
     ElapsedTime intakeToTransfer = new ElapsedTime();
 
@@ -191,6 +197,10 @@ public class Mechanisms {
         intakePivotL = opMode.hardwareMap.servo.get(("itpl"));
         intakePivotR = opMode.hardwareMap.servo.get(("itpr"));
 
+        //outTakeFlip.setPosition(STRAIGHT_OT_FLIP_POS);
+        outTakePivotRight.setPosition(NEUTRAL_OT_ARM_POSR);
+        outTakePivotLeft.setPosition(NEUTRAL_OT_ARM_POSL);
+
         brakePosIT = inTakeLift.getCurrentPosition();
         brakePosOT = (outTakeLiftLeft.getCurrentPosition() + outTakeLiftLeft.getCurrentPosition()) / 2.0;
 
@@ -211,9 +221,9 @@ public class Mechanisms {
         targetOTLPosL = leftOTLPos;
         targetOTLPosR = rightOTLPos;
 
-        outTakePivotLeft.setPosition(.55);
-        intakePivotL.setPosition(.7);
-        intakePivotR.setPosition(.45);
+        //outTakePivotLeft.setPosition(.55);
+        intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL);
+        intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR);
         master = opMode;
     }
 
@@ -306,15 +316,16 @@ public class Mechanisms {
     ////////////////////////////////////////////////////////////////////////////////
     public void setOuttakeArmToNeutralPos()
     {
-        if (master.gamepad2.b && OT_ARM_TO_NEUTRAL_POS_TIME.milliseconds() > 200)
-        {
-            //outTakeFlip.setPosition(NEUTRAL_OT_FLIP_POS); // has to be tuned, the down position to flip the outtake to in order to allow it to pass through the slides
-            OT_ARM_TO_NEUTRAL_POS_TIME.reset();
-        }
-        else if (master.gamepad2.right_bumper && OT_ARM_TO_NEUTRAL_POS_TIME.milliseconds() > 200)
-        {
-            //outTakeFlip.setPosition(HIGH_OT_FLIP_POS); // has to be tuned, the down position to flip the outtake to in order to allow it to pass through the slides
-            OT_ARM_TO_NEUTRAL_POS_TIME.reset();
+        if (master.gamepad2.b && OT_ARM_TO_NEUTRAL_POS_TIME.milliseconds() > 400) {
+            if (isStraight) {
+                //outTakeFlip.setPosition(STRAIGHT_OT_FLIP_POS); // has to be tuned, the down position to flip the outtake to in order to allow it to pass through the slides
+                OT_ARM_TO_NEUTRAL_POS_TIME.reset();
+                isStraight = false;
+            } else {
+                //outTakeFlip.setPosition(BENT_OT_FLIP_POS); // has to be tuned, the down position to flip the outtake to in order to allow it to pass through the slides
+                OT_ARM_TO_NEUTRAL_POS_TIME.reset();
+                isStraight = true;
+            }
         }
     }
 
@@ -359,7 +370,7 @@ public class Mechanisms {
 
     public void switchITMacroState(String newstate)
     {
-        TransferMacroStateTime.reset();
+        TransferMacroStateTime.reset(); //e
         ITMacroState = newstate;
     }
 
@@ -372,38 +383,33 @@ public class Mechanisms {
         if (ITMacroState.equals("servoReady"))
         {
             if (TransferMacroStateTime.milliseconds() > 700) {
-                intakePivotL.setPosition(HIGH_IT_FLIP_POS);
+                intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
                 intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
                 outTakeClaw.setPosition(OPEN_CLAW_POS);
-                setMacroVals(intakezeroPos - 100, true);
-                if (TransferMacroStateTime.milliseconds() > 1000)
+                setMacroVals(intakezeroPos - 50, true);
+                if (TransferMacroStateTime.milliseconds() > 1300)
                     switchITMacroState("closeclaw");
             }
             //outTakeFlip.setPosition(NEUTRAL_OT_FLIP_POS);
             inTakeSpinners.setPower(-.4);
-            outTakePivotLeft.setPosition(.27);
+            outTakePivotLeft.setPosition(LOW_OT_ARM_POSL);
             outTakePivotRight.setPosition(LOW_OT_ARM_POSR);
+            //outTakeFlip.setPosition(STRAIGHT_OT_FLIP_POS);
         }
         if (ITMacroState.equals("closeclaw"))
         {
-            if (TransferMacroStateTime.milliseconds() > 3200)
+            if (TransferMacroStateTime.milliseconds() > 1500)
             {
-                outTakePivotLeft.setPosition(.65);
+                outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL);
                 outTakePivotRight.setPosition(HIGH_OT_ARM_POSR);
                 switchITMacroState("none");
             }
-            else if (TransferMacroStateTime.milliseconds() > 2000) {
-                outTakeClaw.setPosition(GRAB_CLAW_POS);
-                if (TransferMacroStateTime.milliseconds() > 2500)
+            else if (TransferMacroStateTime.milliseconds() > 1000) {
                     setMacroVals(intakezeroPos - 400, true);// will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
-            }
-            else if (TransferMacroStateTime.milliseconds() > 1000)
-            {
-                outTakeClaw.setPosition(OPEN_CLAW_POS);
             }
             else {
                 outTakeClaw.setPosition(GRAB_CLAW_POS);
-                setMacroVals(intakezeroPos, true);
+                setMacroVals(intakezeroPos - 50, true);
                 inTakeSpinners.setPower(0);
             }
         }
@@ -414,18 +420,18 @@ public class Mechanisms {
     {
         if (master.gamepad2.dpad_right)
         {
-            intakePivotL.setPosition(LOW_IT_FLIP_POS);
+            intakePivotL.setPosition(LOW_IT_FLIP_POSL);
             intakePivotR.setPosition(LOW_IT_FLIP_POSR);
         }
         else if (master.gamepad2.dpad_left)
         {
-            intakePivotL.setPosition(HIGH_IT_FLIP_POS);
+            intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
             intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
         }
         else if (master.gamepad2.dpad_up)
         {
-            intakePivotL.setPosition(.7);
-            intakePivotR.setPosition(.45);
+            intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL);
+            intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR);
         }
     }
 
@@ -434,30 +440,30 @@ public class Mechanisms {
     {
         if (master.gamepad2.dpad_down && transferringOTPivot && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(.65);
+            outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL);
             outTakePivotRight.setPosition(HIGH_OT_ARM_POSR);
             transferringOTPivot = false;
             otPivotTime.reset();
         }
         else if (master.gamepad2.dpad_down && !transferringOTPivot && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(.27);
+            outTakePivotLeft.setPosition(LOW_OT_ARM_POSL);
             outTakePivotRight.setPosition(LOW_OT_ARM_POSR);
             transferringOTPivot = true;
             otPivotTime.reset();
         }
         else if (master.gamepad2.left_bumper && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(.3);
-            outTakePivotRight.setPosition(LOW_OT_ARM_POS + .03);
+            outTakePivotLeft.setPosition(NEUTRAL_OT_ARM_POSL);
+            outTakePivotRight.setPosition(NEUTRAL_OT_ARM_POSR);
             transferringOTPivot = true;
             otPivotTime.reset();
         }
         else if (master.gamepad2.x && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(.55);
-            transferringOTPivot = true;
-            otPivotTime.reset();
+           // outTakePivotLeft.setPosition(.55);
+            //transferringOTPivot = true;
+            //otPivotTime.reset();
         }
     }
     //////////////////////////////////////////////////////////////////////////////
@@ -589,20 +595,6 @@ public class Mechanisms {
 
     public void update()
     {
-        if (master.gamepad1.x)
-        {
-            intakePivotL.getController().pwmDisable();
-            intakePivotR.getController().pwmDisable();
-            outTakePivotRight.getController().pwmDisable();
-            outTakePivotLeft.getController().pwmDisable();
-        }
-        if (master.gamepad1.y)
-        {
-            intakePivotL.getController().pwmEnable();
-            intakePivotR.getController().pwmEnable();
-            outTakePivotRight.getController().pwmEnable();
-            outTakePivotLeft.getController().pwmEnable();
-        }
         leftOTLPos = br.getCurrentPosition();
         rightOTLPos = fr.getCurrentPosition();
         itlPos = -fl.getCurrentPosition();
