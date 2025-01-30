@@ -272,8 +272,6 @@ public class localization extends LinearOpMode {
             double constAccelX = (2 * accelX * deltaTime + velocityX) * Math.cos(constAccelHeading) - (2 * accelY * deltaTime + velocityY) * Math.sin(constAccelHeading);
             double constAccelY = (2 * accelY * deltaTime + velocityY) * Math.cos(constAccelHeading) - (2 * accelX * deltaTime + velocityX) * Math.sin(constAccelHeading);
 
-
-            double headingAverage = (prevHeading + currentHeading) / 2.0;
             robotX = (constAccelX / 2) * Math.pow(deltaTime, 2) + velocityX * deltaTime + prevRobotX;
             robotY = (constAccelY / 2) * Math.pow(deltaTime, 2) + velocityY * deltaTime + prevRobotY;
 
