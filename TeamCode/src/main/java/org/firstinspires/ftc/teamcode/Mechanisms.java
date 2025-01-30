@@ -208,7 +208,6 @@ public class Mechanisms {
         OTLZeroPos = leftOTLPos;
         OTRZeroPos = rightOTLPos;
         opMode.telemetry.addData("itl", itlPos);
-        opMode.telemetry.update();
         targetOTLPosL = leftOTLPos;
         targetOTLPosR = rightOTLPos;
 

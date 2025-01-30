@@ -81,24 +81,31 @@ public class FollowPath
     boolean activeFollower = false;
     int trajectoryNumber = 0;
 
+    OpMode master;
+
 
 
     // Start is called before the first frame update
     void Start(OpMode opMode, RRLocalizationRead rr)
     {
+        // posReader is the reference to our localization reader (whether it be Lucca's or RR) that has a returnPos that is a pose2d.
+        // That way we dont have to worry about which localizer it is, the RRLocalizationRead class will handle that.
         posReader = rr;
 
-        File file = new File(fileName);
+        master = opMode;
+
         // Just parses through the file and sets each waypoint's (starting at wp0) data to the various arrays
+        File file = new File(fileName);
         try{
             scan = new Scanner(file);
         }
         catch (FileNotFoundException e)
         {
-            opMode.telemetry.addData("error", e);
+            master.telemetry.addData("error", e);
         }
         activeFollower = true;
-        int index = 0;
+
+        // Initializes the ArrayLists of data and adds a blank list.
         dydxs = new ArrayList<>();
         dists = new ArrayList<>();
         totalDists = new ArrayList<>();
@@ -116,8 +123,11 @@ public class FollowPath
         prevPos = 0;
         prevError = 0;
         combinedDist = 0;
+
         // This is the local variable that is the current trajectory of the path that it is dealing with in the file.
         int curTraj = 0;
+
+        // Going through and parsing the file
         while (scan.hasNextLine())
         {
             String curString = scan.nextLine();
@@ -134,10 +144,10 @@ public class FollowPath
                     thetas.add(new ArrayList<Double>());
                     curTraj++;
                 }
-                index++;
                 continue;
             }
 
+            // This breaks the current line it is on into each of the different data
             Scanner lineScanner = new Scanner(curString).useDelimiter("; ");
 
             while (lineScanner.hasNext()) {
@@ -175,16 +185,28 @@ public class FollowPath
         curWayPointPoss = wayPointPoss.get(trajectoryNumber);
         curThetas = thetas.get(trajectoryNumber);
 
+        Vector2 initialPos;
         try {
-            prevIntersect = new double[]{wayPointPoss.get(0).get(0).x, wayPointPoss.get(0).get(0).y};
+            initialPos = new Vector2(curWayPointPoss.get(0).x, curWayPointPoss.get(0).y);
+            prevIntersect = new double[]{initialPos.x, initialPos.y};
+            posReader.initLocalization(master.hardwareMap, new Pose2d(initialPos.x, initialPos.y, 0));
         }
         catch (Exception e) {
             prevIntersect = new double[]{0, 0};
-            opMode.telemetry.addData("", wayPointPoss.get(0));
+            posReader.initLocalization(master.hardwareMap, new Pose2d(0, 0, 0));
+            master.telemetry.addLine("CurWayPointPos on initialization does not have a value at index 0: " + e);
+            master.telemetry.update();
         }
-        Pose2d pos = rr.returnPose();
-        fieldPos = new Vector2(pos.position.x, pos.position.y);
-        curAngle = getWeightedAngle();
+
+            Pose2d pos = posReader.returnPose();
+            master.telemetry.addLine("fieldPos: x: " + pos.position.x + ", y: " + pos.position.y + ", heading: " + pos.heading);
+            fieldPos = new Vector2(pos.position.x, pos.position.y);
+            curAngle = getWeightedAngle();
+    }
+
+    public Vector2 getFieldPos()
+    {
+        return fieldPos;
     }
 
 
@@ -265,7 +287,7 @@ public class FollowPath
     {
         //  Debug.Log("ERROR");
     }
-    intersect[0] = (fieldPos.position.y - curWayPointPoss.get(curWP).y + fieldPos.position.y / slope + slope * curWayPointPoss.get(curWP).x) / (1/slope + slope);
+    intersect[0] = (fieldPos.position.y - curWayPointPoss.get(curWP).y + fieldPos.position.x / slope + slope * curWayPointPoss.get(curWP).x) / (1/slope + slope);
     intersect[1] = curWayPointPoss.get(curWP).y + slope * (intersect[0] - curWayPointPoss.get(curWP).x);
     return intersect;
 }
@@ -422,6 +444,8 @@ public class FollowPath
 
     private void updatePos()
     {
+        Pose2d pos = posReader.returnPose();
+        fieldPos = new Vector2(pos.position.x, pos.position.y);
         double cos = Math.cos((float)curAngle * degreesToRadians);
         double[] curIntersect = getIntersectOfTajectory();
         if (prevIntersect != null)
@@ -435,6 +459,7 @@ public class FollowPath
                     curPos += Math.sqrt(Math.pow(curIntersect[0] - prevIntersect[0], 2) + Math.pow(curIntersect[1] - prevIntersect[1], 2)) * -Math.signum((float)curIntersect[0] - (float)prevIntersect[0]);
             }
             curPos += Math.sqrt(Math.pow(curIntersect[0] - prevIntersect[0], 2) + Math.pow(curIntersect[1] - prevIntersect[1], 2)) * Math.signum(cos) * Math.signum((float)curIntersect[1] - (float)prevIntersect[1]);
+            master.telemetry.addData("curPos", curPos);
         }
         else
             prevIntersect = new double[2];
@@ -461,6 +486,7 @@ public class FollowPath
         if (activeFollower)
         {
             double slope = getSlopeOfGrossTraj();
+            master.telemetry.addData("slope", slope);
 
             // Just the normalized direction it is supposed to go.
             double lengthOfVector = getGeneralDist(slope, 1);
@@ -468,19 +494,35 @@ public class FollowPath
             int ySign = (int)Math.signum(Math.cos(curAngle * degreesToRadians));
             double[] trajPar = new double[]{1.0 / lengthOfVector * xSign, Math.abs((float)slope) / lengthOfVector * ySign};
 
+            master.telemetry.addData("trajPar", trajPar[0] + " " + trajPar[1]);
+
             // The normalized distance in the perp direction.
             double[] intersect = getIntersectOfTajectory();
             double[] trajPerp = new double[]{intersect[0] - fieldPos.x, intersect[1] - fieldPos.y};
+            master.telemetry.addLine("x: " + fieldPos.x + " y: " + fieldPos.y);
+            master.telemetry.addData("intersect", intersect[0] + " " + intersect[1]);
+            master.telemetry.addData("trajPerp", trajPerp[0] + " " + trajPerp[1]);
             double lengthOfPerpVector = getGeneralDist(trajPerp[0], trajPerp[1]);
-            trajPerp[0] /= lengthOfPerpVector;
-            trajPerp[1] /= lengthOfPerpVector;
+            if (lengthOfPerpVector != 0)
+            {
+                trajPerp[0] /= lengthOfPerpVector;
+                trajPerp[1] /= lengthOfPerpVector;
+            }
+            else {
+                trajPerp[0] = 0;
+                trajPerp[1] = 0;
+            }
 
 
             // gets the distance between the robot and its intersect.
             double dist = lengthOfPerpVector;
 
+            //master.telemetry.addData("dist", dist);
+
             double powerPerp = dist / (dist + TRAJ_WEIGHT_CONST);
             double powerPar = 1 - powerPerp;
+
+            //master.telemetry.addData("powerPerp", powerPerp);
 
             double[] finalTraj = new double[]{powerPerp * trajPerp[0] + powerPar * trajPar[0], powerPar * trajPar[1] + powerPerp * trajPerp[1]};
             double lengthOfFinalVector = getGeneralDist(finalTraj[0], finalTraj[1]);
@@ -505,34 +547,6 @@ public class FollowPath
 
     // Update is called once per frame
     public void update() {
-        // Hack for quickly and consistently increasing the position of the robot
-
-
-        // Hack for printing the intersection and the distance to the line.
-       /* if (Input.GetKey(KeyCode.D)) {
-            double[] intersect = getIntersectOfTajectory();
-            Debug.Log("intersect x " + intersect[0] + " y " + intersect[1]);
-            Vector3 markerWorldPos = createPath.ConvertToWorldPos(createPath.ConvertFromInchesField(new Vector2((float) intersect[0], (float) intersect[1])));
-            Debug.Log("pos x " + markerWorldPos.x + " y " + markerWorldPos.y);
-            markerTransform.transform.position = new Vector3(markerWorldPos.x, markerWorldPos.y, 0f);
-        }
-
-        // Reread the file.
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            Start();
-        }
-
-        if (Input.GetKey(KeyCode.T) && false) {
-            double[] traj = getRobotTrajectory();
-            Debug.Log(traj[0] + " is x and y is " + traj[1]);
-        }
-
-
-        if (Time.time > prevTime + 1 / 30) {
-            prevTime = Time.time;
-        }
-
-        */
         updatePos();
     }
 }

@@ -65,7 +65,7 @@ public final class MecanumDrive {
                 RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
         // drive model parameters
-        public double inPerTick = 1.0 / 550.0;
+        public double inPerTick = 1.0 / 550.0; // .00197
         public double lateralInPerTick = inPerTick;
         public double trackWidthTicks = 4640.253885281493;
 
@@ -208,6 +208,13 @@ public final class MecanumDrive {
         }
     }
 
+    public enum MotorNames{
+        bl,
+        fl,
+        fr,
+        br
+    }
+
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
         this.pose = pose;
 
@@ -261,17 +268,17 @@ public final class MecanumDrive {
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
-    public DcMotorEx returnMotor(String name)
+    public DcMotorEx returnMotor(MotorNames name)
     {
-        if (name.equals("fl"))
+        if (name.equals(MotorNames.fl))
         {
             return leftFront;
         }
-        else if (name.equals("fr"))
+        else if (name.equals(MotorNames.fr))
         {
             return rightFront;
         }
-        else if (name.equals("bl"))
+        else if (name.equals(MotorNames.bl))
         {
             return leftBack;
         }

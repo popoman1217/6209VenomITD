@@ -32,7 +32,7 @@ public class LongerTravelAuto extends LinearOpMode {
 
         MecanumDrive mecanumDrive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
 
-        mechanisms.init(this, mecanumDrive.returnMotor("fl"), mecanumDrive.returnMotor("br"), mecanumDrive.returnMotor("fr"));
+        mechanisms.init(this, mecanumDrive.returnMotor(MecanumDrive.MotorNames.fl), mecanumDrive.returnMotor(MecanumDrive.MotorNames.br), mecanumDrive.returnMotor(MecanumDrive.MotorNames.fr));
 
         //DrivetrainControllers dt = new DrivetrainControllers();
         //dt.init(this);
