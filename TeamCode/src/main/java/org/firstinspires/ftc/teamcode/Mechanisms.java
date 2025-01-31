@@ -95,13 +95,13 @@ public class Mechanisms {
 
 
     // done
-    public static double HIGH_OT_ARM_POSL = 0.3;
-    public static double LOW_OT_ARM_POSL = 0;
-    public static double NEUTRAL_OT_ARM_POSL = 0.1;
+    public static double HIGH_OT_ARM_POSL = 0.6;
+    public static double LOW_OT_ARM_POSL = 0.23;
+    public static double NEUTRAL_OT_ARM_POSL = 0.55;
 
-    public static double HIGH_OT_ARM_POSR = 0.05;
-    public static double LOW_OT_ARM_POSR = .35;
-    public static double NEUTRAL_OT_ARM_POSR = .1;
+    public static double HIGH_OT_ARM_POSR = 0.03;
+    public static double LOW_OT_ARM_POSR = .4;
+    public static double NEUTRAL_OT_ARM_POSR = .08;
 
     public static double STRAIGHT_OT_FLIP_POS = 0.6;
     public static double BENT_OT_FLIP_POS = .3;
@@ -109,15 +109,15 @@ public class Mechanisms {
 
 
     // done
-    public static double GRAB_CLAW_POS = 0;
+    public static double GRAB_CLAW_POS = 0.06;
     public static double OPEN_CLAW_POS = 0.3;
     public static double NEUTRAL_CLAW_POS = 0.2;
 
-    public static double HIGH_IT_FLIP_POSR = 1;
-    public static double LOW_IT_FLIP_POSR = 0.41;
-    public static double HIGH_IT_FLIP_POSL = 0.38;
-    public static double LOW_IT_FLIP_POSL = 0.95;
-    public static double NEUTRAL_IT_FLIP_POSR = 0.78;
+    public static double HIGH_IT_FLIP_POSR = .65;
+    public static double LOW_IT_FLIP_POSR = 0.05;
+    public static double HIGH_IT_FLIP_POSL = 0.4;
+    public static double LOW_IT_FLIP_POSL = 0.96;
+    public static double NEUTRAL_IT_FLIP_POSR = 0.4;
     public static double NEUTRAL_IT_FLIP_POSL = 0.58;
 
     ElapsedTime intakeToTransfer = new ElapsedTime();
@@ -271,16 +271,16 @@ public class Mechanisms {
     ////////////////////////////////////////////////////////////////////////////////
     public void setBaseIntakeLift()
     {
-        double rightStickY = -master.gamepad2.right_stick_y;
-        master.telemetry.addData("rsy", rightStickY);
+        double rightStickX = -master.gamepad2.right_stick_x;
+        master.telemetry.addData("rsx", rightStickX);
 
         if (master.gamepad2.x)
         {
             intakezeroPos = itlPos;
         }
 
-        if (Math.abs(rightStickY) > .05) {
-            inTakeLift.setPower(rightStickY * .7);
+        if (Math.abs(rightStickX) > .05) {
+            inTakeLift.setPower(rightStickX * .7);
             targetITLiftPos = itlPos;
             approachingTarIT = false;
             kpIT = .1;
@@ -386,7 +386,6 @@ public class Mechanisms {
                 intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
                 intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
                 outTakeClaw.setPosition(OPEN_CLAW_POS);
-                setMacroVals(intakezeroPos - 50, true);
                 if (TransferMacroStateTime.milliseconds() > 1300)
                     switchITMacroState("closeclaw");
             }
@@ -407,9 +406,10 @@ public class Mechanisms {
             else if (TransferMacroStateTime.milliseconds() > 1000) {
                     setMacroVals(intakezeroPos - 400, true);// will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
             }
-            else {
+            else if (TransferMacroStateTime.milliseconds() > 700)
                 outTakeClaw.setPosition(GRAB_CLAW_POS);
-                setMacroVals(intakezeroPos - 50, true);
+            else {
+                setMacroVals(intakezeroPos, true);
                 inTakeSpinners.setPower(0);
             }
         }

@@ -80,6 +80,7 @@ public class PathFollowerTest extends LinearOpMode {
             Pose2d pose = rr.returnPose();
             tarHeading = pose.heading.toDouble();
             double adder = sensors.getTrueAngleDiff(tarHeading) * .07;
+            adder = 0;
             telemetry.addData("adder", adder);
             telemetry.addData("heading", sensors.returnGyroYaw());
             telemetry.addLine("x: " + pose.position.x + " y: " + pose.position.y + " heading: " + pose.heading);
@@ -96,10 +97,10 @@ public class PathFollowerTest extends LinearOpMode {
 
                 telemetry.addData("fl power", frontLeftPower);
 
-                dt.frontRightMotor.setPower(frontRightPower * .3);
-                dt.frontLeftMotor.setPower(frontLeftPower * .3);
-                dt.backRightMotor.setPower(backRightPower * .3);
-                dt.backLeftMotor.setPower(backLeftPower * .3);
+                dt.frontRightMotor.setPower(frontRightPower * .5);
+                dt.frontLeftMotor.setPower(frontLeftPower * .5);
+                dt.backRightMotor.setPower(backRightPower * .5);
+                dt.backLeftMotor.setPower(backLeftPower * .5);
 
                 telemetry.addData("fl motor", dt.frontLeftMotor.getPortNumber());
             }
