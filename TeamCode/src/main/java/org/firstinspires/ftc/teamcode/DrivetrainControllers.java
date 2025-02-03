@@ -87,11 +87,7 @@ public class DrivetrainControllers {
         else
             multiplier = 0;
 
-        curPowerFR += ((2 * dt) * multiplier);
-        master.telemetry.addData("curPower", curPowerFR);
-        master.telemetry.addData("dt", dt);
-        master.telemetry.addData("mult", multiplier);
-        master.telemetry.addData("tp", tarPower);
+        curPowerFR += ((Math.pow(curPowerFR - tarPower, 2) * dt) * multiplier);
         return tarPower;
     }
     ////////////////////////////////////////////////////
@@ -111,7 +107,7 @@ public class DrivetrainControllers {
         else
             multiplier = 0;
 
-        curPowerFL += ((2 * dt) * multiplier);
+        curPowerFL += (Math.pow(curPowerFL - tarPower, 2) * dt * multiplier);
         return tarPower;
     }
     ////////////////////////////////////////////////////
@@ -131,7 +127,7 @@ public class DrivetrainControllers {
         else
             multiplier = 0;
 
-        curPowerBR += ((2 * dt) * multiplier);
+        curPowerBR += ((Math.pow(curPowerBR - tarPower, 2) * dt) * multiplier);
         return tarPower;
     }
     ////////////////////////////////////////////////////
@@ -151,7 +147,7 @@ public class DrivetrainControllers {
         else
             multiplier = 0;
 
-        curPowerBL += ((2 * dt) * multiplier);
+        curPowerBL += ((Math.pow(curPowerBL - tarPower, 2) * dt) * multiplier);
         return tarPower;
     }
 
@@ -169,7 +165,7 @@ public class DrivetrainControllers {
             prevFCPressTime = totalTime.milliseconds();
         }
 
-        double adder = 0;//sensors.calcAdder();
+        double adder = sensors.calcAdder();
 
         if (usingFC) {
             // this would be start on Xbox (changeable)
@@ -248,6 +244,53 @@ public class DrivetrainControllers {
         frontLeftMotor.setPower(0);// Apply forward power
         frontRightMotor.setPower(0);
         backLeftMotor.setPower(0);// Apply forward power
+        backRightMotor.setPower(0);
+    }
+
+
+    public void turnPID(double tarHeading, double timeOut, Sensors sensors)
+    {
+        double kp = 0.03; // Proportional gain
+        double ki = 0.0;  // Integral gain
+        double kd = 0.0;  // Derivative gain
+
+        double error;
+        double previousError = 0;
+        double integral = 0;
+        double derivative;
+        double output;
+
+        timeOut = totalTime.seconds() + timeOut;
+
+        while (totalTime.seconds() <= timeOut) {
+
+            double currentHeading = sensors.returnGyroYaw(); // Assuming you have a method to get the current heading
+            error = sensors.getTrueAngleDiff(tarHeading);
+
+            if (Math.abs(error) <= 1)
+            {
+                break;
+            }
+
+            integral += error * (totalTime.milliseconds() - prevTimeFL) / 1000.0;
+            derivative = (error - previousError) / ((totalTime.milliseconds() - prevTimeFL) / 1000.0);
+            output = kp * error + ki * integral + kd * derivative;
+
+            output = .25 * Math.signum(sensors.getTrueAngleDiff(tarHeading));
+
+            frontLeftMotor.setPower(output);
+            frontRightMotor.setPower(-output);
+            backLeftMotor.setPower(output);
+            backRightMotor.setPower(-output);
+
+            previousError = error;
+            prevTimeFL = totalTime.milliseconds();
+        }
+
+        // Stop the motors after the turn
+        frontLeftMotor.setPower(0);
+        frontRightMotor.setPower(0);
+        backLeftMotor.setPower(0);
         backRightMotor.setPower(0);
     }
 

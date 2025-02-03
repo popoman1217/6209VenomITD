@@ -86,7 +86,7 @@ public class FollowPath
 
 
     // Start is called before the first frame update
-    void Start(OpMode opMode, RRLocalizationRead rr)
+    void Start(OpMode opMode, RRLocalizationRead rr, String m_fileName)
     {
         // posReader is the reference to our localization reader (whether it be Lucca's or RR) that has a returnPos that is a pose2d.
         // That way we dont have to worry about which localizer it is, the RRLocalizationRead class will handle that.
@@ -94,6 +94,7 @@ public class FollowPath
 
         master = opMode;
 
+        fileName = m_fileName;
         // Just parses through the file and sets each waypoint's (starting at wp0) data to the various arrays
         File file = new File(fileName);
         try{
@@ -478,6 +479,15 @@ public class FollowPath
     private double getGeneralDist(double val1, double val2)
     {
         return Math.sqrt(Math.pow(val1, 2) + Math.pow(val2, 2));
+    }
+
+    public double getSpeedController()
+    {
+        if (curPos >= curTotalDists.get(curTotalDists.size() - 1) - 15)
+        {
+            return Math.max(.53, Math.abs(curTotalDists.get(curTotalDists.size() - 1) - curPos) * .05);
+        }
+        return 1;
     }
 
     // Gets the normalized vector where x is the normalized x distance, y is the y, and z is the speed.

@@ -15,12 +15,12 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.RoadRunner.MecanumDrive;
 
 @Config
-@Autonomous(name = "Path Follower Test", group = "autos")
-public class PathFollowerTest extends LinearOpMode {
+@Autonomous(name = "Copper Head Auto", group = "autos")
+public class CopperHeadAuto extends LinearOpMode {
     Mechanisms mechanisms;
     FollowPath pathFollower;
     Sensors sensors;
-    static int tarPose = 2800;
+    static int tarPose = 2400;
     public boolean RUNMOTORS = false;
     ControllerHandler controllerHandler = new ControllerHandler();
 
@@ -76,7 +76,7 @@ public class PathFollowerTest extends LinearOpMode {
         mechanisms.outTakePivotRight.setPosition(Mechanisms.LOW_OT_ARM_POSR);
 
 
-       // mechanisms.transferMacroAuto();
+        // mechanisms.transferMacroAuto();
 
 
         double tarHeading = 0;
@@ -141,15 +141,15 @@ public class PathFollowerTest extends LinearOpMode {
         dt.backRightMotor.setPower(0);
         dt.backLeftMotor.setPower(0);
 
-        /*mechanisms.transferMacroAuto();
+        mechanisms.transferMacroAuto();
 
-
+        //pathFollower
 
         runPathFollowerMotors(dt, tarHeading, rr);
         dt.frontRightMotor.setPower(0);
         dt.frontLeftMotor.setPower(0);
         dt.backRightMotor.setPower(0);
-        dt.backLeftMotor.setPower(0);*/
+        dt.backLeftMotor.setPower(0);
 
         /*mechanisms.transferMacroAuto();
 

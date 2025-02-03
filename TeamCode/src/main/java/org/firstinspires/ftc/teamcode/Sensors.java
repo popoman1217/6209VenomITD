@@ -27,6 +27,8 @@ public class Sensors {
 
     OpMode master;
 
+    double addedDegrees = 0;
+
     public void init(OpMode opMode)
     {
         imu = opMode.hardwareMap.get(IMU.class, "imu");
@@ -40,10 +42,25 @@ public class Sensors {
         master = opMode;
     }
 
+    public void init(OpMode opMode, double initHeading)
+    {
+        imu = opMode.hardwareMap.get(IMU.class, "imu");
+        // change it to match the actual orientation of the rev control hub
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD));
+        imu.initialize(parameters);
+        imu.resetYaw();
+
+        addedDegrees = initHeading;
+
+        master = opMode;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     public double returnGyroYaw()
     {
-        return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+        return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + addedDegrees;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -79,8 +96,8 @@ public class Sensors {
             }
             double diff = getTrueAngleDiff(gyroTarAngle);
             isXReleased = false;
-            double STABILIZER_CONSTANT = .05;
-            return diff * STABILIZER_CONSTANT;
+            double STABILIZER_CONSTANT = .04;
+            return -diff * STABILIZER_CONSTANT;
         }
         else
         {
