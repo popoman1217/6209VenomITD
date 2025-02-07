@@ -88,12 +88,13 @@ public class CopperHeadAuto extends LinearOpMode {
         dt.backLeftMotor.setPower(0);
 
         mechanisms.moveOTLiftEncoder(.7, tarPose, 3000);
+        mechanisms.resetMacroVals(false);
         mechanisms.setMacroBrakeValsOT();
 
         time.reset();
         while (time.milliseconds() < 1000)
         {
-            mechanisms.setOTBrake();
+            mechanisms.powerOTPIDToTarget();
             mechanisms.update();
         }
         mechanisms.outTakePivotLeft.setPosition(Mechanisms.HIGH_OT_ARM_POSL);
@@ -105,7 +106,7 @@ public class CopperHeadAuto extends LinearOpMode {
         time.reset();
         while (time.milliseconds() < 1000)
         {
-            mechanisms.setOTBrake();
+            mechanisms.powerOTPIDToTarget();
             mechanisms.update();
         }
         mechanisms.outTakeClaw.setPosition(Mechanisms.OPEN_CLAW_POS);
@@ -113,7 +114,7 @@ public class CopperHeadAuto extends LinearOpMode {
         time.reset();
         while (time.milliseconds() < 500)
         {
-            mechanisms.setOTBrake();
+            mechanisms.powerOTPIDToTarget();
             mechanisms.update();
         }
         mechanisms.outTakePivotLeft.setPosition(Mechanisms.LOW_OT_ARM_POSL);

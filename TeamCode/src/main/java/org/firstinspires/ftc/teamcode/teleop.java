@@ -47,12 +47,20 @@ public class teleop extends OpMode {
     Sensors sensors;
     Mechanisms mechanisms;
     FileRead fileRead;
+    ControllerHandler controllerHandler = new ControllerHandler();
 
     ////////////////////////////////////////////////////////////////////////////////
     @Override
     public void init(){
+
+        localizationRead = new RRLocalizationRead();
+        localizationRead.initLocalization(hardwareMap);
+
         driveTrain = new DrivetrainControllers();
-        driveTrain.init(this);
+        driveTrain.initMotorsRR(this, localizationRead);
+
+        controllerHandler = new ControllerHandler();
+        controllerHandler.initController(this);
 
         sensors = new Sensors();
         sensors.init(this);
@@ -63,9 +71,18 @@ public class teleop extends OpMode {
         fileRead = new FileRead();
         fileRead.init(this);
 
+
+        mechanisms.initPastFirstFrame(controllerHandler);
+
+
         //localizationRead = new RRLocalizationRead();
         //localizationRead.initLocalization(hardwareMap);
 
+    }
+
+    public ControllerHandler getControllerHandler()
+    {
+        return controllerHandler;
     }
 
     // Driver 2 Controls:
@@ -118,8 +135,10 @@ public class teleop extends OpMode {
             //fileRead.readFile();
 
             driveTrain.runMotors(sensors);
+            mechanisms.changeStaticVals();
+            controllerHandler.update();
             //driveTrain.runMotorsConstantSpeed(.3,.3,.3,.3);
-            telemetry.update();
+            //telemetry.update();
         }
     }
 

@@ -197,9 +197,9 @@ public class DrivetrainControllers {
 
             double power = Math.min(Math.abs(y) + Math.abs(x), 1);
             frontLeftMotor.setPower(acceleratorFL((power * cos + power * sin + rx) * multiplier) - adder);
-            backLeftMotor.setPower(-acceleratorBL((power * cos - power * sin + rx) * multiplier) - adder);
-            frontRightMotor.setPower(-acceleratorFR((power * cos - power * sin - rx) * multiplier) + adder);
-            backRightMotor.setPower(-acceleratorBR((power * cos + power * sin - rx) * multiplier) + adder);
+            backLeftMotor.setPower(acceleratorBL((power * cos - power * sin + rx) * multiplier) - adder);
+            frontRightMotor.setPower(acceleratorFR((power * cos - power * sin - rx) * multiplier) + adder);
+            backRightMotor.setPower(acceleratorBR((power * cos + power * sin - rx) * multiplier) + adder);
         }
         else {
             double y = -master.gamepad1.left_stick_y;
@@ -218,10 +218,10 @@ public class DrivetrainControllers {
 
             double multiplier = Math.max(1 - master.gamepad1.right_trigger, .25) ;
 
-            frontLeftMotor.setPower(-acceleratorFL(frontLeftPower * multiplier) - adder);
-            backLeftMotor.setPower(-acceleratorBL(backLeftPower * multiplier) - adder);
-            frontRightMotor.setPower(-acceleratorFR(frontRightPower * multiplier) + adder);
-            backRightMotor.setPower(-acceleratorBR(backRightPower * multiplier) + adder);
+            frontLeftMotor.setPower(acceleratorFL(frontLeftPower * multiplier) + adder);
+            backLeftMotor.setPower(acceleratorBL(backLeftPower * multiplier) + adder);
+            frontRightMotor.setPower(acceleratorFR(frontRightPower * multiplier) - adder);
+            backRightMotor.setPower(acceleratorBR(backRightPower * multiplier) - adder);
         }
     }
 

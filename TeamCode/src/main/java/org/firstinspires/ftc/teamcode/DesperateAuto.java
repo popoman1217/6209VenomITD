@@ -34,6 +34,8 @@ public class DesperateAuto extends LinearOpMode {
 
         mechanisms.init(this, mecanumDrive.returnMotor(MecanumDrive.MotorNames.fl), mecanumDrive.returnMotor(MecanumDrive.MotorNames.br), mecanumDrive.returnMotor(MecanumDrive.MotorNames.fr));
 
+        mechanisms.resetMacroVals(true);
+        mechanisms.resetMacroVals(false);
         //DrivetrainControllers dt = new DrivetrainControllers();
         //dt.init(this);
 
@@ -62,7 +64,7 @@ public class DesperateAuto extends LinearOpMode {
             mechanisms.outTakePivotRight.setPosition(mechanisms.HIGH_OT_ARM_POSR);
             if (time.milliseconds() > 500)
                 mechanisms.outTakeClaw.setPosition(mechanisms.OPEN_CLAW_POS);
-            mechanisms.setOTBrake();
+            mechanisms.powerOTPIDToTarget();
         }
         mechanisms.outTakePivotLeft.setPosition(.55);
         mechanisms.outTakePivotRight.setPosition(mechanisms.HIGH_OT_ARM_POSR - .1);

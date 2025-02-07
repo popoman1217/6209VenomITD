@@ -99,11 +99,11 @@ public class Mechanisms {
 
     // done
     public static double HIGH_OT_ARM_POSL = 0.6;
-    public static double LOW_OT_ARM_POSL = 0.18;
+    public static double LOW_OT_ARM_POSL = 0.19;
     public static double NEUTRAL_OT_ARM_POSL = 0.55;
 
     public static double HIGH_OT_ARM_POSR = 0.03;
-    public static double LOW_OT_ARM_POSR = .45;
+    public static double LOW_OT_ARM_POSR = .44;
     public static double NEUTRAL_OT_ARM_POSR = .08;
 
     public static double STRAIGHT_OT_FLIP_POS = 0.6;
@@ -117,14 +117,32 @@ public class Mechanisms {
     public static double OPEN_CLAW_POS = 0.3;
     public static double NEUTRAL_CLAW_POS = 0.2;
 
-    public static double LOW_IT_FLIP_POSR = 0.02;
-    public static double LOW_IT_FLIP_POSL = 0.99;
+    public static double LOW_IT_FLIP_POSR = 0.07;
+    public static double LOW_IT_FLIP_POSL = 0.94;
     public static double NEUTRAL_IT_FLIP_POSR = 0.38;
     public static double NEUTRAL_IT_FLIP_POSL = 0.6;
     public static double HIGH_IT_FLIP_POSR = 0.66;
     public static double HIGH_IT_FLIP_POSL = 0.38;
-    public static double EASE_IT_FLIP_POSR = 0.06;
-    public static double EASE_IT_FLIP_POSL = 0.94;
+    public static double EASE_IT_FLIP_POSR = 0.1;
+    public static double EASE_IT_FLIP_POSL = 0.91;
+
+    public double HIGH_IT_FLIP_POSL_CHANGE = 0;
+    public double HIGH_IT_FLIP_POSR_CHANGE = 0;
+    public double EASE_IT_FLIP_POSL_CHANGE = 0;
+    public double EASE_IT_FLIP_POSR_CHANGE = 0;
+    public double LOW_IT_FLIP_POSL_CHANGE = 0;
+    public double LOW_IT_FLIP_POSR_CHANGE = 0;
+    public double NEUTRAL_IT_FLIP_POSL_CHANGE = 0;
+    public double NEUTRAL_IT_FLIP_POSR_CHANGE = 0;
+
+    public double HIGH_OT_ARM_POSL_CHANGE = 0;
+    public double HIGH_OT_ARM_POSR_CHANGE = 0;
+    public double LOW_OT_ARM_POSL_CHANGE = 0;
+    public double LOW_OT_ARM_POSR_CHANGE = 0;
+    public double NEUTRAL_OT_ARM_POSL_CHANGE = 0;
+    public double NEUTRAL_OT_ARM_POSR_CHANGE = 0;
+
+    public staticVars prevValChanged = staticVars.NONE;
 
 
     ElapsedTime intakeToTransfer = new ElapsedTime();
@@ -139,14 +157,36 @@ public class Mechanisms {
     boolean ITGrabbed = false;
     ElapsedTime OT_ARM_TO_NEUTRAL_POS_TIME = new ElapsedTime();
 
+    double prevTime = 0;
+
     double brakePosIT = 0;
     boolean brakingIT;
 
     int intakezeroPos = 0;
+    int intakeMacroPos = 0;
+
+    int rawITLPos = 0;
+    int rawOTLLPos = 0;
+    int rawOTLRPos = 0;
+
     int OTLZeroPos = 0;
     int OTRZeroPos = 0;
 
     double brakePosOT = 0;
+
+    double integralIT = 0;
+    double KIIT = 0.001;
+    double dt = 0;
+
+    double derivIT = 0;
+    double KDIT = .01;
+
+    double integralOT = 0;
+    double KIOT = 0.0006;
+
+    double derivOT = 0;
+    double KDOT = .01;
+
     boolean brakingOT = true;
 
     DcMotor fl;
@@ -166,11 +206,26 @@ public class Mechanisms {
     public static boolean upPivotOT = true;
     double pivotTimeOT = 0;
 
+    ControllerHandler controllerHandler;
+
 
     OpMode master;
 
+    public enum staticVars
+    {
+        NONE,
+        HIGH_IT_FLIP_POS_CHANGE,
+        EASE_IT_FLIP_POS_CHANGE,
+        LOW_IT_FLIP_POS_CHANGE,
+        NEUTRAL_IT_FLIP_POS_CHANGE,
+        HIGH_OT_ARM_POS_CHANGE,
+        LOW_OT_ARM_POS_CHANGE,
+        NEUTRAL_OT_ARM_POS_CHANGE
+    }
+
     public void init(OpMode opMode, DcMotor frontL, DcMotor backR, DcMotor frontR)
     {
+        master = opMode;
         fl = frontL;
         br = backR;
         fr = frontR;
@@ -215,23 +270,94 @@ public class Mechanisms {
 
         //hyperServo = opMode.hardwareMap.servo.get("elbowR");
 
-        leftOTLPos = br.getCurrentPosition();
-        rightOTLPos = fr.getCurrentPosition();
-        itlPos = fl.getCurrentPosition();
 
-        targetITLiftPos = itlPos;
+        update();
+        setOutTakeZeroPos(0);
+        setIntakeZeroPos(0);
+        update();
+        setTargetITLPos(itlPos);
+        intakeMacroPos = itlPos;
+        setMacroBrakeValsOT();
 
-        intakezeroPos = itlPos;
-        OTLZeroPos = leftOTLPos;
-        OTRZeroPos = rightOTLPos;
         opMode.telemetry.addData("itl", itlPos);
-        targetOTLPosL = leftOTLPos;
-        targetOTLPosR = rightOTLPos;
 
         //outTakePivotLeft.setPosition(.55);
         intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL);
         intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR);
-        master = opMode;
+
+    }
+
+    public void initPastFirstFrame(ControllerHandler CH)
+    {
+        controllerHandler = CH;
+    }
+
+
+
+    public void powerOTPIDToTarget()
+    {
+        double errorL = targetOTLPosL - leftOTLPos;
+        double errorR = targetOTLPosR - rightOTLPos;
+
+        double proportionalL = errorL / 100.0 * kpOT;
+        double proportionalR = errorR / 100.0 * kpOT;
+
+        integralOT += (dt) * (errorR + errorL) / 2 * KIOT;
+
+        double powerL = proportionalL + integralOT;
+        double powerR = proportionalR + integralOT;
+
+        master.telemetry.addData("pl", proportionalL);
+        master.telemetry.addData("pr", proportionalR);
+        master.telemetry.addData("il", integralOT);
+        master.telemetry.addData("tl", targetOTLPosL);
+
+        outTakeLiftLeft.setPower(powerL);
+        outTakeLiftRight.setPower(powerR);
+    }
+
+    public void powerITPIDToTarget()
+    {
+        double error = targetITLiftPos - itlPos;
+        double proportional = error / 100.0 * kpIT;
+
+        inTakeLift.setPower(proportional);
+    }
+
+    public void powerITPIDToTarget(double power)
+    {
+        double error = targetITLiftPos - itlPos;
+        double proportional = error / 100.0 * kpIT;
+
+        inTakeLift.setPower(proportional * power);
+    }
+
+    // This method sets the "zero" position of the intake lift along with an offset, meaning it sets
+    // the current position of the intake motor plus the offset to zero.
+    public void setIntakeZeroPos(int offset)
+    {
+        intakezeroPos = rawITLPos + offset;
+        intakeMacroPos = intakeMacroPos - intakezeroPos;
+        itlPos = 0;
+    }
+
+    public void setIntakeMacroPos(int pos)
+    {
+        intakeMacroPos = pos;
+    }
+
+    public void setOutTakeZeroPos(int offset)
+    {
+        OTLZeroPos = rawOTLLPos + offset;
+        OTRZeroPos = rawOTLRPos + offset;
+        leftOTLPos = 0;
+        rightOTLPos = 0;
+    }
+
+    public void setMacroBrakeValsOT()
+    {
+        targetOTLPosR = rightOTLPos;
+        targetOTLPosL = leftOTLPos;
     }
 
 
@@ -240,99 +366,85 @@ public class Mechanisms {
     {
         double leftStickY = -master.gamepad2.left_stick_y;
         if (Math.abs(leftStickY) > .05) {
-            kpOT = .08;
             outTakeLiftLeft.setPower(leftStickY);
             outTakeLiftRight.setPower(leftStickY);
-            targetOTLPosL = leftOTLPos;
-            targetOTLPosR = rightOTLPos;
+            setMacroBrakeValsOT();
             approachingTarOT = false;
         }
-        else
+        else if (!approachingTarOT)
         {
+            resetMacroVals(false);
             approachingTarOT = true;
         }
 
         if (approachingTarOT)
         {
-            outTakeLiftRight.setPower((targetOTLPosR - rightOTLPos) / 100.0 * kpOT);
-            outTakeLiftLeft.setPower((targetOTLPosL - leftOTLPos) / 100.0 * kpOT);
+            powerOTPIDToTarget();
         }
-
-
-
-    }
-
-    public void setOTBrake()
-    {
-        kpOT = -.08;
-        outTakeLiftRight.setPower((targetOTLPosR - rightOTLPos) / 100.0 * kpOT);
-        outTakeLiftLeft.setPower((targetOTLPosL - leftOTLPos) / 100.0 * kpOT);
-    }
-
-    public void setITBrake()
-    {
-        kpOT = -.08;
-        outTakeLiftRight.setPower((targetITLiftPos - itlPos) / 100.0 * kpOT);
-    }
-
-    public void setMacroBrakeValsOT()
-    {
-        update();
-        targetOTLPosR = rightOTLPos;
-        targetOTLPosL = leftOTLPos;
-    }
-
-    public void setIntakeZeroPos(int offset)
-    {
-        update();
-        intakezeroPos = itlPos + offset;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
     public void setBaseIntakeLift()
     {
-        double rightStickY = master.gamepad2.right_stick_y;
-        master.telemetry.addData("rsx", rightStickY);
+        double rightStickX = master.gamepad2.right_stick_x;
+        master.telemetry.addData("rsx", rightStickX);
 
-        if (master.gamepad2.x)
-        {
-            intakezeroPos = itlPos;
-        }
 
-        if (Math.abs(rightStickY) > .05) {
-            inTakeLift.setPower(rightStickY * .7);
-            targetITLiftPos = itlPos;
+        if (Math.abs(rightStickX) > .05) {
+            double trueVal = Math.signum(rightStickX) * Math.pow(rightStickX, 2) * .7;
+            inTakeLift.setPower(trueVal * .7);
+            setTargetITLPos(itlPos);
             approachingTarIT = false;
             kpIT = .1;
         }
-        else
+        else if (!approachingTarIT)
         {
+            resetMacroVals(true);
             approachingTarIT = true;
         }
 
         if (approachingTarIT)
         {
-            inTakeLift.setPower(-(targetITLiftPos - itlPos) / 100.0 * kpIT);
+            powerITPIDToTarget();
         }
 
         master.telemetry.addData("itlpos", itlPos);
         master.telemetry.addData("tarpos", targetITLiftPos);
 
+        if (master.gamepad2.x)
+        {
+            setIntakeZeroPos(0);
+            intakeMacroPos = itlPos;
+            setTargetITLPos(intakeMacroPos);
+        }
+
     }
 
-    public void setMacroVals(int tarPos, boolean intake){
+    public void resetMacroVals(boolean intake){
         if (intake)
         {
-            targetITLiftPos = tarPos;
-            kpIT = .17;
+            kpIT = .3;
         }
         else
         {
-            targetOTLPosR = tarPos;
-            targetOTLPosL = tarPos;
             kpOT = .2;
+            integralOT = 0;
         }
     }
+
+    public void setTargetOTLPosR(int tarPos)
+    {
+        targetOTLPosR = tarPos;
+    }
+    public void setTargetOTLPosL(int tarPos)
+    {
+        targetOTLPosL = tarPos;
+    }
+    public void setTargetITLPos(int tarPos)
+    {
+        targetITLiftPos = tarPos;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     public void setOuttakeArmToNeutralPos()
     {
@@ -371,32 +483,43 @@ public class Mechanisms {
     {
         update();
         ElapsedTime time = new ElapsedTime();
-        targetOTLPosL = leftOTLPos + tarPos;
-        targetOTLPosR = rightOTLPos + tarPos;
+        resetMacroVals(false);
+        setTargetOTLPosR(rightOTLPos + tarPos);
+        setTargetOTLPosL(leftOTLPos + tarPos);
+        kpOT = .2;
         while (Math.abs(Math.abs(targetOTLPosL) - Math.abs(leftOTLPos)) > 75 && time.milliseconds() < timeOut)
         {
-            double sign = Math.signum(targetOTLPosL - leftOTLPos);
-            outTakeLiftLeft.setPower(Math.signum(tarPos) * Math.min(power, Math.pow(targetOTLPosL - leftOTLPos, 1) / 100 * power * sign * .3));
-            outTakeLiftRight.setPower(Math.signum(tarPos) * Math.min(power, Math.pow(targetOTLPosL - leftOTLPos, 1) / 100 * power * sign * .3));
             update();
+            powerOTPIDToTarget();
+            master.telemetry.update();
         }
+        //resetMacroVals(false);
 
 
+    }
+
+    public void setOTLiftPower(double power)
+    {
+        outTakeLiftLeft.setPower(power);
+        outTakeLiftRight.setPower(power);
     }
 
     public void moveITLiftEncoder(double power, int tarPos, double timeOut)
     {
         update();
         ElapsedTime time = new ElapsedTime();
-        targetITLiftPos = itlPos + tarPos;
-        while (Math.abs(Math.abs(targetITLiftPos) - Math.abs(itlPos)) > 100 && time.milliseconds() < timeOut)
+        setTargetITLPos(itlPos + tarPos);
+        resetMacroVals(true);
+        while (Math.abs(Math.abs(targetITLiftPos) - Math.abs(itlPos)) > 25 && time.seconds() < timeOut)
         {
-            double sign = Math.signum(targetITLiftPos - itlPos);
-            inTakeLift.setPower(Math.signum(tarPos) * Math.min(Math.abs(power), Math.abs(Math.pow(targetITLiftPos - itlPos, 1) / 100 * power * sign * .3)));
             update();
+            powerITPIDToTarget();
         }
+    }
 
-
+    public void powerITLift(double power)
+    {
+        inTakeLift.setPower(-power);
     }
 
 
@@ -440,8 +563,11 @@ public class Mechanisms {
                 intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
                 intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
                 outTakeClaw.setPosition(OPEN_CLAW_POS);
-                if (TransferMacroStateTime.milliseconds() > 1300)
+                if (TransferMacroStateTime.milliseconds() > 1300) {
+                    setTargetITLPos(intakeMacroPos);
+                    resetMacroVals(true);
                     switchITMacroState("closeclaw");
+                }
             }
             //outTakeFlip.setPosition(NEUTRAL_OT_FLIP_POS);
             inTakeSpinners.setPower(-.4);
@@ -458,14 +584,14 @@ public class Mechanisms {
                 switchITMacroState("none");
             }
             else if (TransferMacroStateTime.milliseconds() > 1000) {
-                    setMacroVals(intakezeroPos - 400, true);// will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
+                resetMacroVals(true);// will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
+                setTargetITLPos(intakeMacroPos + 400);
             }
             else if (TransferMacroStateTime.milliseconds() > 700) {
                 OTGrabbed = true;
                 outTakeClaw.setPosition(GRAB_CLAW_POS);
             }
             else {
-                setMacroVals(intakezeroPos, true);
                 inTakeSpinners.setPower(0);
             }
         }
@@ -482,28 +608,34 @@ public class Mechanisms {
         else if (master.gamepad2.dpad_left)
         {
             inTakeState = "high";
-            intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
-            intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
+            intakePivotL.setPosition(HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+            intakePivotR.setPosition(HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+            prevValChanged = staticVars.HIGH_IT_FLIP_POS_CHANGE;
             inTakeStateTime.reset();
+            inTakeState = "none";
         }
         else if (master.gamepad2.dpad_up)
         {
             inTakeState = "up";
-            intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL);
-            intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR);
+            intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+            intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+            prevValChanged = staticVars.NEUTRAL_IT_FLIP_POS_CHANGE;
             inTakeStateTime.reset();
+            inTakeState = "none";
         }
 
         if (inTakeState.equals("low"))
         {
             if (inTakeStateTime.milliseconds() > 500) {
-                intakePivotL.setPosition(LOW_IT_FLIP_POSL);
-                intakePivotR.setPosition(LOW_IT_FLIP_POSR);
+                intakePivotL.setPosition(LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+                intakePivotR.setPosition(LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+                prevValChanged = staticVars.LOW_IT_FLIP_POS_CHANGE;
+                inTakeState = "none";
             }
             else
             {
-                intakePivotL.setPosition(EASE_IT_FLIP_POSL);
-                intakePivotR.setPosition(EASE_IT_FLIP_POSR);
+                intakePivotL.setPosition(LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE - .04);
+                intakePivotR.setPosition(LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE + .04);
             }
         }
 
@@ -519,22 +651,25 @@ public class Mechanisms {
     {
         if (master.gamepad2.dpad_down && transferringOTPivot && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL);
-            outTakePivotRight.setPosition(HIGH_OT_ARM_POSR);
+            outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+            outTakePivotRight.setPosition(HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+            prevValChanged = staticVars.HIGH_OT_ARM_POS_CHANGE;
             transferringOTPivot = false;
             otPivotTime.reset();
         }
         else if (master.gamepad2.dpad_down && !transferringOTPivot && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(LOW_OT_ARM_POSL);
-            outTakePivotRight.setPosition(LOW_OT_ARM_POSR);
+            outTakePivotLeft.setPosition(LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+            outTakePivotRight.setPosition(LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
+            prevValChanged = staticVars.LOW_OT_ARM_POS_CHANGE;
             transferringOTPivot = true;
             otPivotTime.reset();
         }
         else if (master.gamepad2.left_bumper && otPivotTime.milliseconds() > 300)
         {
-            outTakePivotLeft.setPosition(NEUTRAL_OT_ARM_POSL);
-            outTakePivotRight.setPosition(NEUTRAL_OT_ARM_POSR);
+            outTakePivotLeft.setPosition(NEUTRAL_OT_ARM_POSL + NEUTRAL_OT_ARM_POSL_CHANGE);
+            outTakePivotRight.setPosition(NEUTRAL_OT_ARM_POSR + NEUTRAL_OT_ARM_POSR_CHANGE);
+            prevValChanged = staticVars.NEUTRAL_OT_ARM_POS_CHANGE;
             transferringOTPivot = true;
             otPivotTime.reset();
         }
@@ -556,55 +691,179 @@ public class Mechanisms {
             inTakeSpinners.setPower(0);
         }
     }
-    //////////////////////////////////////////////////////////////////////////////
-    /*public void transfer() throws InterruptedException{
-        if (intakeToTransfer.milliseconds() > 0 && intakeToTransfer.milliseconds() < 200)
 
-            intakePivotR.setPosition(0);
+    public void changeStaticVals()
+    {
+        if (controllerHandler.isGP1RightBumperPressed1Frame()) {
+            if (prevValChanged == staticVars.HIGH_IT_FLIP_POS_CHANGE) {
+                HIGH_IT_FLIP_POSL_CHANGE -= .01;
+                intakePivotL.setPosition(HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+                HIGH_IT_FLIP_POSR_CHANGE += .01;
+                intakePivotR.setPosition(HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("HIGH IT FLIP POS CHANGE", Math.abs(HIGH_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("HIGH IT FLIP POSL", HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("HIGH IT FLIP POSR", HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.EASE_IT_FLIP_POS_CHANGE) {
+                EASE_IT_FLIP_POSL_CHANGE -= .01;
+                intakePivotL.setPosition(EASE_IT_FLIP_POSL + EASE_IT_FLIP_POSL_CHANGE);
+                EASE_IT_FLIP_POSR_CHANGE += .01;
+                intakePivotR.setPosition(EASE_IT_FLIP_POSR + EASE_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("EASE IT FLIP POS CHANGE", Math.abs(EASE_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("EASE IT FLIP POSL", EASE_IT_FLIP_POSL + EASE_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("EASE IT FLIP POSR", EASE_IT_FLIP_POSR + EASE_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.LOW_IT_FLIP_POS_CHANGE) {
+                LOW_IT_FLIP_POSL_CHANGE -= .01;
+                intakePivotL.setPosition(LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+                LOW_IT_FLIP_POSR_CHANGE += .01;
+                intakePivotR.setPosition(LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("LOW IT FLIP POS CHANGE", Math.abs(LOW_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("LOW IT FLIP POSL", LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("LOW IT FLIP POSR", LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.NEUTRAL_IT_FLIP_POS_CHANGE) {
+                NEUTRAL_IT_FLIP_POSL_CHANGE -= .01;
+                intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+                NEUTRAL_IT_FLIP_POSR_CHANGE += .01;
+                intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("NEUTRAL IT FLIP POS CHANGE", Math.abs(NEUTRAL_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("NEUTRAL IT FLIP POSL", NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("NEUTRAL IT FLIP POSR", NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.HIGH_OT_ARM_POS_CHANGE) {
+                HIGH_OT_ARM_POSL_CHANGE -= .01;
+                outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+                HIGH_OT_ARM_POSR_CHANGE += .01;
+                outTakePivotRight.setPosition(HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+                master.telemetry.addData("HIGH OT ARM POS CHANGE", Math.abs(HIGH_OT_ARM_POSL_CHANGE));
+                master.telemetry.addData("HIGH OT ARM POSL", HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+                master.telemetry.addData("HIGH OT ARM POSR", HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.LOW_OT_ARM_POS_CHANGE) {
+                LOW_OT_ARM_POSL_CHANGE -= .01;
+                outTakePivotLeft.setPosition(LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+                LOW_OT_ARM_POSR_CHANGE += .01;
+                outTakePivotRight.setPosition(LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
+                master.telemetry.addData("LOW OT ARM POS CHANGE", Math.abs(LOW_OT_ARM_POSL_CHANGE));
+                master.telemetry.addData("LOW OT ARM POSL", LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+                master.telemetry.addData("LOW OT ARM POSR", LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.NEUTRAL_OT_ARM_POS_CHANGE) {
+                NEUTRAL_OT_ARM_POSL_CHANGE -= .01;
+                outTakePivotLeft.setPosition(NEUTRAL_OT_ARM_POSL + NEUTRAL_OT_ARM_POSL_CHANGE);
+                NEUTRAL_OT_ARM_POSR_CHANGE += .01;
+                outTakePivotRight.setPosition(NEUTRAL_OT_ARM_POSR + NEUTRAL_OT_ARM_POSR_CHANGE);
+                master.telemetry.addData("NEUTRAL OT ARM POS CHANGE", Math.abs(NEUTRAL_OT_ARM_POSL_CHANGE));
+                master.telemetry.addData("NEUTRAL OT ARM POSL", NEUTRAL_OT_ARM_POSL + NEUTRAL_OT_ARM_POSL_CHANGE);
+                master.telemetry.addData("NEUTRAL OT ARM POSR", NEUTRAL_OT_ARM_POSR + NEUTRAL_OT_ARM_POSR_CHANGE);
+            }
+            master.telemetry.addData("prev", prevValChanged);
         }
-        if (intakeToTransfer.milliseconds() > 200 && intakeToTransfer.milliseconds() < 400)
-        {
-            intakePivotL.setPosition(1); // pos of intake so that it is lifted
-            intakePivotR.setPosition(1);
+        else if (controllerHandler.isGP1LeftBumperPressed1Frame()) {
+            if (prevValChanged == staticVars.HIGH_IT_FLIP_POS_CHANGE) {
+                HIGH_IT_FLIP_POSL_CHANGE += .01;
+                intakePivotL.setPosition(HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+                HIGH_IT_FLIP_POSR_CHANGE -= .01;
+                intakePivotR.setPosition(HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("HIGH IT FLIP POS CHANGE", Math.abs(HIGH_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("HIGH IT FLIP POSL", HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("HIGH IT FLIP POSR", HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.EASE_IT_FLIP_POS_CHANGE) {
+                EASE_IT_FLIP_POSL_CHANGE += .01;
+                intakePivotL.setPosition(EASE_IT_FLIP_POSL + EASE_IT_FLIP_POSL_CHANGE);
+                EASE_IT_FLIP_POSR_CHANGE -= .01;
+                intakePivotR.setPosition(EASE_IT_FLIP_POSR + EASE_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("EASE IT FLIP POS CHANGE", Math.abs(EASE_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("EASE IT FLIP POSL", EASE_IT_FLIP_POSL + EASE_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("EASE IT FLIP POSR", EASE_IT_FLIP_POSR + EASE_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.LOW_IT_FLIP_POS_CHANGE) {
+                LOW_IT_FLIP_POSL_CHANGE += .01;
+                intakePivotL.setPosition(LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+                LOW_IT_FLIP_POSR_CHANGE -= .01;
+                intakePivotR.setPosition(LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("LOW IT FLIP POS CHANGE", Math.abs(LOW_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("LOW IT FLIP POSL", LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("LOW IT FLIP POSR", LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.NEUTRAL_IT_FLIP_POS_CHANGE) {
+                NEUTRAL_IT_FLIP_POSL_CHANGE += .01;
+                intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+                NEUTRAL_IT_FLIP_POSR_CHANGE -= .01;
+                intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+                master.telemetry.addData("NEUTRAL IT FLIP POS CHANGE", Math.abs(NEUTRAL_IT_FLIP_POSR_CHANGE));
+                master.telemetry.addData("NEUTRAL IT FLIP POSL", NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+                master.telemetry.addData("NEUTRAL IT FLIP POSR", NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.HIGH_OT_ARM_POS_CHANGE) {
+                HIGH_OT_ARM_POSL_CHANGE += .01;
+                outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+                HIGH_OT_ARM_POSR_CHANGE -= .01;
+                outTakePivotRight.setPosition(HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+                master.telemetry.addData("HIGH OT ARM POS CHANGE", Math.abs(HIGH_OT_ARM_POSL_CHANGE));
+                master.telemetry.addData("HIGH OT ARM POSL", HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+                master.telemetry.addData("HIGH OT ARM POSR", HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+            }
+            if (prevValChanged == staticVars.LOW_OT_ARM_POS_CHANGE) {
+                LOW_OT_ARM_POSL_CHANGE += .01;
+                outTakePivotLeft.setPosition(LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+                LOW_OT_ARM_POSR_CHANGE -= .01;
+                outTakePivotRight.setPosition(LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
+                master.telemetry.addData("LOW OT ARM POS CHANGE", Math.abs(LOW_OT_ARM_POSL_CHANGE));
+                master.telemetry.addData("LOW OT ARM POSL", LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+                master.telemetry.addData("LOW OT ARM POSR", LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
+            }
+            master.telemetry.addData("prev", prevValChanged);
+            master.telemetry.addLine("in the left bumper");
         }
-        if (intakeToTransfer.milliseconds() > 400 && intakeToTransfer.milliseconds() < 600)
-        {
-            intakePivotL.setPosition(0); // pos of intake when it is in the transfer position
-            intakePivotR.setPosition(0);
-        }
-        if (intakeToTransfer.milliseconds() > 600 && intakeToTransfer.milliseconds() < 800)
-        {
-            outTakeFlip.setPosition(0);
-            intakePivotL.setPosition(0); // pos of intake so that it is lifted
-            intakePivotR.setPosition(0);
-        }
-        if (intakeToTransfer.milliseconds() > 800 && intakeToTransfer.milliseconds() < 1000)
-        {
-            outTakePivotRight.setPosition(0); // pivot outtake so that it is in the pos where it drops the pixel
-            outTakePivotLeft.setPosition(0);
-        }
-    }*/
-    //////////////////////////////////////////////////////////////////////////////
-    /*public void slidePosHigh() {
-        outTakeLiftLeft.setTargetPosition(1); // encoder position of highest position slides need to be
-        outTakeLiftRight.setTargetPosition(1);
 
-    }*/
-    /*
-    //////////////////////////////////////////////////////////////////////////////
-    public void servotesting() {
-        double rotatorConstant = 0.0;
-        if (master.gamepad1.x) {
-            rotatorConstant += 0.1;
-            intakePivotL.setPosition(rotatorConstant);
-            intakePivotR.setPosition(rotatorConstant);
-            master.telemetry.update();
-            master.telemetry.addData("Servo position", rotatorConstant);
+        if (LOW_OT_ARM_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("LOW OT ARM POS CHANGE", Math.abs(LOW_OT_ARM_POSL_CHANGE));
+            master.telemetry.addData("LOW OT ARM POSL", LOW_OT_ARM_POSL + LOW_OT_ARM_POSL_CHANGE);
+            master.telemetry.addData("LOW OT ARM POSR", LOW_OT_ARM_POSR + LOW_OT_ARM_POSR_CHANGE);
         }
-
+        if (HIGH_OT_ARM_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("HIGH OT ARM POS CHANGE", Math.abs(HIGH_OT_ARM_POSL_CHANGE));
+            master.telemetry.addData("HIGH OT ARM POSL", HIGH_OT_ARM_POSL + HIGH_OT_ARM_POSL_CHANGE);
+            master.telemetry.addData("HIGH OT ARM POSR", HIGH_OT_ARM_POSR + HIGH_OT_ARM_POSR_CHANGE);
+        }
+        if (NEUTRAL_OT_ARM_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("NEUTRAL OT ARM POS CHANGE", Math.abs(NEUTRAL_OT_ARM_POSL_CHANGE));
+            master.telemetry.addData("NEUTRAL OT ARM POSL", NEUTRAL_OT_ARM_POSL + NEUTRAL_OT_ARM_POSL_CHANGE);
+            master.telemetry.addData("NEUTRAL OT ARM POSR", NEUTRAL_OT_ARM_POSR + NEUTRAL_OT_ARM_POSR_CHANGE);
+        }
+        if (HIGH_IT_FLIP_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("HIGH IT FLIP POS CHANGE", Math.abs(HIGH_IT_FLIP_POSR_CHANGE));
+            master.telemetry.addData("HIGH IT FLIP POSL", HIGH_IT_FLIP_POSL + HIGH_IT_FLIP_POSL_CHANGE);
+            master.telemetry.addData("HIGH IT FLIP POSR", HIGH_IT_FLIP_POSR + HIGH_IT_FLIP_POSR_CHANGE);
+        }
+        if (EASE_IT_FLIP_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("EASE IT FLIP POS CHANGE", Math.abs(EASE_IT_FLIP_POSR_CHANGE));
+            master.telemetry.addData("EASE IT FLIP POSL", EASE_IT_FLIP_POSL + EASE_IT_FLIP_POSL_CHANGE);
+            master.telemetry.addData("EASE IT FLIP POSR", EASE_IT_FLIP_POSR + EASE_IT_FLIP_POSR_CHANGE);
+        }
+        if (LOW_IT_FLIP_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("LOW IT FLIP POS CHANGE", Math.abs(LOW_IT_FLIP_POSR_CHANGE));
+            master.telemetry.addData("LOW IT FLIP POSL", LOW_IT_FLIP_POSL + LOW_IT_FLIP_POSL_CHANGE);
+            master.telemetry.addData("LOW IT FLIP POSR", LOW_IT_FLIP_POSR + LOW_IT_FLIP_POSR_CHANGE);
+        }
+        if (NEUTRAL_IT_FLIP_POSL_CHANGE != 0)
+        {
+            master.telemetry.addData("NEUTRAL IT FLIP POS CHANGE", Math.abs(NEUTRAL_IT_FLIP_POSR_CHANGE));
+            master.telemetry.addData("NEUTRAL IT FLIP POSL", NEUTRAL_IT_FLIP_POSL + NEUTRAL_IT_FLIP_POSL_CHANGE);
+            master.telemetry.addData("NEUTRAL IT FLIP POSR", NEUTRAL_IT_FLIP_POSR + NEUTRAL_IT_FLIP_POSR_CHANGE);
+        }
+        master.telemetry.update();
     }
 
-     */
     //////////////////////////////////////////////////////////////////////////////
     public void runTesting()
     {
@@ -674,9 +933,18 @@ public class Mechanisms {
 
     public void update()
     {
-        leftOTLPos = br.getCurrentPosition();
-        rightOTLPos = fr.getCurrentPosition();
-        itlPos = -fl.getCurrentPosition();
+        dt = totalTime.seconds() - prevTime;
+        rawITLPos = -fl.getCurrentPosition();
+        rawOTLLPos = -br.getCurrentPosition();
+        rawOTLRPos = -fr.getCurrentPosition();
+
+        leftOTLPos = rawOTLLPos - OTLZeroPos;
+        rightOTLPos = rawOTLRPos - OTRZeroPos;
+        itlPos = rawITLPos - intakezeroPos;
+        master.telemetry.addData("itlpos", itlPos);
+        master.telemetry.addData("otlpos", leftOTLPos);
+        master.telemetry.addData("otlposr", rightOTLPos);
+        prevTime = totalTime.seconds();
     }
 
 
@@ -689,37 +957,40 @@ public class Mechanisms {
             if (TransferMacroStateTime.milliseconds() > 700) {
                 intakePivotL.setPosition(HIGH_IT_FLIP_POSL);
                 intakePivotR.setPosition(HIGH_IT_FLIP_POSR);
-                outTakeClaw.setPosition(OPEN_CLAW_POS);
-                if (TransferMacroStateTime.milliseconds() > 1300)
+                //outTakeClaw.setPosition(OPEN_CLAW_POS);
+                if (TransferMacroStateTime.milliseconds() > 1300) {
+                    setTargetITLPos(intakeMacroPos);
+                    resetMacroVals(true);
                     switchITMacroState("closeclaw");
+                }
             }
-            //outTakeFlip.setPosition(NEUTRAL_OT_FLIP_POS);
             inTakeSpinners.setPower(-.7);
             outTakePivotLeft.setPosition(LOW_OT_ARM_POSL);
             outTakePivotRight.setPosition(LOW_OT_ARM_POSR);
-            //outTakeFlip.setPosition(STRAIGHT_OT_FLIP_POS);
         }
         while (ITMacroState.equals("closeclaw"))
         {
-            if (TransferMacroStateTime.milliseconds() > 1500)
+            update();
+            if (TransferMacroStateTime.milliseconds() > 2300)
             {
                 outTakePivotLeft.setPosition(HIGH_OT_ARM_POSL);
                 outTakePivotRight.setPosition(HIGH_OT_ARM_POSR);
                 switchITMacroState("none");
             }
+            if (TransferMacroStateTime.milliseconds() > 1600)
+            {
+                setTargetITLPos(intakeMacroPos + 200);
+            }
             else if (TransferMacroStateTime.milliseconds() > 1000) {
-                setMacroVals(intakezeroPos - 400, true);// will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
+                // will have to tune, meant to be a position to get the outtake flipped to the lowest possible position (arm ready to be moved down)
+                outTakeClaw.setPosition(GRAB_CLAW_POS);
             }
             else if (TransferMacroStateTime.milliseconds() > 700) {
                 OTGrabbed = true;
-                outTakeClaw.setPosition(GRAB_CLAW_POS);
+                powerSpinners(0);
+
             }
-            else {
-                setMacroVals(intakezeroPos, true);
-                inTakeSpinners.setPower(0);
-            }
-            update();
-            setITBrake();
+            powerITPIDToTarget();
         }
     }
 

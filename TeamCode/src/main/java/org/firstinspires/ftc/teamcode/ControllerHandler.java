@@ -21,6 +21,35 @@ public class ControllerHandler {
         previousGamepad2.copy(currentGamepad2);
     }
 
+    public enum Gamepad1Buttons {
+        A,
+        B,
+        X,
+        Y,
+        DPAD_UP,
+        DPAD_DOWN,
+        DPAD_LEFT,
+        DPAD_RIGHT,
+        LEFT_BUMPER,
+        RIGHT_BUMPER,
+        START,
+        BACK
+    }
+    public enum Gamepad2Buttons {
+        A,
+        B,
+        X,
+        Y,
+        DPAD_UP,
+        DPAD_DOWN,
+        DPAD_LEFT,
+        DPAD_RIGHT,
+        LEFT_BUMPER,
+        RIGHT_BUMPER,
+        START,
+        BACK
+    }
+
     public boolean isGP1APressed() {
         return master.gamepad1.a;
     }
@@ -168,169 +197,147 @@ public class ControllerHandler {
     public boolean isGP1APressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.a && !previousGamepad1.a;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1BPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.b && !previousGamepad1.b;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1XPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.x && !previousGamepad1.x;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1YPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.y && !previousGamepad1.y;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1DpadUpPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.dpad_up && !previousGamepad1.dpad_up;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1DpadDownPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.dpad_down && !previousGamepad1.dpad_down;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1DpadLeftPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.dpad_left && !previousGamepad1.dpad_left;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1DpadRightPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.dpad_right && !previousGamepad1.dpad_right;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1LeftBumperPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
-        boolean result = currentGamepad1.left_bumper && !previousGamepad1.left_bumper;
-        previousGamepad1.copy(currentGamepad1);
-        return result;
+        return currentGamepad1.left_bumper && !previousGamepad1.left_bumper;
     }
 
     public boolean isGP1RightBumperPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
-        boolean result = currentGamepad1.right_bumper && !previousGamepad1.right_bumper;
-        previousGamepad1.copy(currentGamepad1);
-        return result;
+        return currentGamepad1.right_bumper && !previousGamepad1.right_bumper;
     }
 
     public boolean isGP1StartPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.start && !previousGamepad1.start;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP1BackPressed1Frame() {
         currentGamepad1.copy(master.gamepad1);
         boolean result = currentGamepad1.back && !previousGamepad1.back;
-        previousGamepad1.copy(currentGamepad1);
         return result;
     }
 
     public boolean isGP2APressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.a && !previousGamepad2.a;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2BPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.b && !previousGamepad2.b;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2XPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.x && !previousGamepad2.x;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2YPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.y && !previousGamepad2.y;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2DpadUpPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.dpad_up && !previousGamepad2.dpad_up;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2DpadDownPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.dpad_down && !previousGamepad2.dpad_down;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2DpadLeftPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.dpad_left && !previousGamepad2.dpad_left;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2DpadRightPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.dpad_right && !previousGamepad2.dpad_right;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2LeftBumperPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.left_bumper && !previousGamepad2.left_bumper;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2RightBumperPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
         boolean result = currentGamepad2.right_bumper && !previousGamepad2.right_bumper;
-        previousGamepad2.copy(currentGamepad2);
         return result;
     }
 
     public boolean isGP2StartPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
-        boolean result = currentGamepad2.start && !previousGamepad2.start;
-        previousGamepad2.copy(currentGamepad2);
-        return result;
+        return currentGamepad2.start && !previousGamepad2.start;
     }
 
     public boolean isGP2BackPressed1Frame() {
         currentGamepad2.copy(master.gamepad2);
-        boolean result = currentGamepad2.back && !previousGamepad2.back;
+        return currentGamepad2.back && !previousGamepad2.back;
+    }
+
+    public void update()
+    {
         previousGamepad2.copy(currentGamepad2);
-        return result;
+        previousGamepad1.copy(currentGamepad1);
     }
 
 }

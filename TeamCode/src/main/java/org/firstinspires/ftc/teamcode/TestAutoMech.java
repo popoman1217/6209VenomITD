@@ -22,27 +22,30 @@ public class TestAutoMech extends LinearOpMode {
     Mechanisms mechanisms;
     FollowPath pathFollower;
     Sensors sensors;
-    static int tarPose = 2800;
+    static int tarPose = 2100;
     public boolean RUNMOTORS = false;
     ControllerHandler controllerHandler = new ControllerHandler();
+    CommonMechanisms commonMechanisms;
+    StateHandler stateHandler;
     String state = "beginning";
     String prevState = "none";
     ElapsedTime stateTime = new ElapsedTime();
     boolean firstStateFrame = true;
 
-    public int computeFactorial()
-    {
-
-    }
 
     public void runOpMode()
     {
+
+        stateHandler = new StateHandler();
+        stateHandler.init(this);
 
         RRLocalizationRead rr = new RRLocalizationRead();
 
         controllerHandler.initController(this);
 
         pathFollower = new FollowPath();
+
+        commonMechanisms = new CommonMechanisms();
 
         rr.initLocalization(hardwareMap, new Pose2d(0, 0, 0));
 
@@ -51,7 +54,7 @@ public class TestAutoMech extends LinearOpMode {
     ElapsedTime time = new ElapsedTime();
 
     DrivetrainControllers dt = new DrivetrainControllers();
-        dt.initMotorsRR(this, rr);
+    dt.initMotorsRR(this, rr);
 
     sensors = new Sensors();
     double initHeading = 0;
@@ -62,8 +65,12 @@ public class TestAutoMech extends LinearOpMode {
         mechanisms.init(this, dt.frontLeftMotor, dt.backRightMotor, dt.frontRightMotor);
         mechanisms.outTakeClaw.setPosition(mechanisms.GRAB_CLAW_POS);
         mechanisms.setIntakeZeroPos(0);
+        mechanisms.setOutTakeZeroPos(0);
+        mechanisms.setIntakeMacroPos(mechanisms.itlPos + 150);
 
         telemetry.update();
+    commonMechanisms.init(this, stateHandler, mechanisms);
+
 
     //RRLocalizationRead rrLocalizationRead = new RRLocalizationRead();
     //rrLocalizationRead.initLocalization(hardwareMap);
@@ -82,132 +89,46 @@ public class TestAutoMech extends LinearOpMode {
     waitForStart();
         if(isStopRequested()) return;
 
-        if (state.equals("beginning") )
+        switchState("beginning");
+
+        commonMechanisms.moveFromClampedToPlaceAndBack("moving intake");
+
+        if (state.equals("moving intake"))
         {
-            while (stateTime.milliseconds() < 1000) {
-                mechanisms.outTakePivotLeft.setPosition(Mechanisms.LOW_OT_ARM_POSL);
-                mechanisms.outTakePivotRight.setPosition(Mechanisms.LOW_OT_ARM_POSR);
-                stateUpdate();
-            }
+            mechanisms.moveITLiftEncoder(.8, 175, 4);
+            mechanisms.powerITPIDToTarget();
+            //mechanisms.powerITLift(0);
+            stateUpdate();
+            switchState("move intake down", 1000);
         }
 
-        switchState("raising lift");
-
-        if (state.equals("raising lift"))
+        if (state.equals("move intake down"))
         {
-
+            mechanisms.moveIntakeDown();
+            mechanisms.powerSpinners(.7);
+            stateUpdate();
+            switchState("transfer");
         }
 
+        if (state.equals("transfer"))
+        {
+            mechanisms.resetMacroVals(true);
+            mechanisms.moveITLiftEncoder(.8, 200, 4);
+            mechanisms.powerITPIDToTarget();
+            mechanisms.transferMacroAuto();
+            stateUpdate();
+            switchState("raising lift");
+        }
 
-    // mechanisms.transferMacroAuto();
+        commonMechanisms.moveFromClampedToPlaceAndBack("none");
 
-
-        mechanisms.moveOTLiftEncoder(.7, tarPose, 3000);
-        mechanisms.setMacroBrakeValsOT();
-
-        time.reset();
-        while (time.milliseconds() < 1000)
-    {
-        mechanisms.setOTBrake();
-        mechanisms.update();
-    }
-        mechanisms.outTakePivotLeft.setPosition(Mechanisms.HIGH_OT_ARM_POSL);
-        mechanisms.outTakePivotRight.setPosition(Mechanisms.HIGH_OT_ARM_POSR);
-
-    //dt.turnPID(10,.3,sensors);
-    //dt.turnPID(-10,.3,sensors);
-
-        time.reset();
-        while (time.milliseconds() < 1000)
-    {
-        mechanisms.setOTBrake();
-        mechanisms.update();
-    }
-        mechanisms.outTakeClaw.setPosition(Mechanisms.OPEN_CLAW_POS);
-
-        time.reset();
-        while (time.milliseconds() < 500)
-    {
-        mechanisms.setOTBrake();
-        mechanisms.update();
-    }
-        mechanisms.outTakePivotLeft.setPosition(Mechanisms.LOW_OT_ARM_POSL);
-        mechanisms.outTakePivotRight.setPosition(Mechanisms.LOW_OT_ARM_POSR);
-        time.reset();
-        while (time.milliseconds() < 500)
-    {
 
     }
-        mechanisms.moveOTLiftEncoder(.7, -tarPose + 100, 1500);
 
-        mechanisms.outTakeLiftLeft.setPower(0);
-        mechanisms.outTakeLiftRight.setPower(0);
-
-        mechanisms.moveITLiftEncoder(.3, 500, 4);
-        mechanisms.moveIntakeDown();
-        mechanisms.powerSpinners(.7);
-        pathFollower.incrementTrajNumber();
-    //dt.turnPID(-135, 3, sensors);
-    //dt.turnPID(0, 3, sensors);
-
-    runPathFollowerMotors(dt, tarHeading, rr);
-        dt.frontRightMotor.setPower(0);
-        dt.frontLeftMotor.setPower(0);
-        dt.backRightMotor.setPower(0);
-        dt.backLeftMotor.setPower(0);
-
-        /*mechanisms.transferMacroAuto();
-
-
-
-        runPathFollowerMotors(dt, tarHeading, rr);
-        dt.frontRightMotor.setPower(0);
-        dt.frontLeftMotor.setPower(0);
-        dt.backRightMotor.setPower(0);
-        dt.backLeftMotor.setPower(0);*/
-
-        /*mechanisms.transferMacroAuto();
-
-        mechanisms.intakePivotL.setPosition(Mechanisms.NEUTRAL_IT_FLIP_POSL);
-        mechanisms.intakePivotR.setPosition(Mechanisms.NEUTRAL_IT_FLIP_POSR);
-
-        mechanisms.outTakePivotLeft.setPosition(Mechanisms.LOW_OT_ARM_POSL);
-        mechanisms.outTakePivotRight.setPosition(Mechanisms.LOW_OT_ARM_POSR);
-
-            /*
-            mecanumDrive.
-            telemetry.addData("x", rrLocalizationRead.returnPose().position.x);
-            telemetry.addData("y", rrLocalizationRead.returnPose().position.y);
-            telemetry.update();
-
-
-            followPath.update();
-            double[] traj = followPath.getRobotTrajectory();
-            double y = -traj[1];
-            double x = traj[0];
-            double frontLeftPower = (y + x);
-            double backLeftPower = (y - x);
-            double frontRightPower = (y - x);
-            double backRightPower = (y + x);
-
-            dt.frontRightMotor.setPower(frontRightPower * .3);
-            dt.frontLeftMotor.setPower(frontLeftPower * .3);
-            dt.backRightMotor.setPower(backRightPower * .3);
-            dt.backLeftMotor.setPower(backLeftPower * .3);
-
-            telemetry.addData("y", y);
-            telemetry.addData("x", x);
-            telemetry.update();
-
-
-
-            //driveTrain.moveForwardByInches(-60, 10);// Moves the robot forward by 10 inches
-
-        }*/
-    }
 
     private void switchState(String newState)
     {
+        telemetry.addLine("switching state");
         telemetry.addData("old state", state);
         prevState = state;
         state = newState;
@@ -217,10 +138,31 @@ public class TestAutoMech extends LinearOpMode {
         telemetry.update();
     }
 
+    private void switchState(String newState, long delay)
+    {
+        ElapsedTime delayTime = new ElapsedTime();
+        telemetry.addLine("switching state");
+        telemetry.addData("old state", state);
+        prevState = state;
+        state = newState;
+        stateTime.reset();
+        firstStateFrame = true;
+        telemetry.addData("new state", state);
+        telemetry.addData("sleeping X seconds", delay);
+        while (delayTime.milliseconds() < delay)
+        {
+            mechanisms.update();
+            mechanisms.powerOTPIDToTarget();
+            mechanisms.powerITPIDToTarget();
+        }
+        telemetry.update();
+    }
+
     private void stateUpdate()
     {
         telemetry.addData("old state", prevState);
         telemetry.addData("new state", state);
+        telemetry.addData("state time", stateTime.milliseconds());
     }
 
 public void runPathFollowerMotors(DrivetrainControllers dt, double tarHeading, RRLocalizationRead rr)

@@ -62,7 +62,7 @@ public class LongerTravelAuto extends LinearOpMode {
             mechanisms.outTakePivotRight.setPosition(mechanisms.HIGH_OT_ARM_POSR);
             if (time.milliseconds() > 500)
                 mechanisms.outTakeClaw.setPosition(mechanisms.OPEN_CLAW_POS);
-            mechanisms.setOTBrake();
+            mechanisms.powerOTPIDToTarget();
         }
         mechanisms.outTakePivotLeft.setPosition(.55);
         mechanisms.outTakePivotRight.setPosition(mechanisms.HIGH_OT_ARM_POSR - .1);
