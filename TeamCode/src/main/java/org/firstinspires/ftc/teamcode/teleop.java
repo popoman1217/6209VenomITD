@@ -53,8 +53,9 @@ public class teleop extends OpMode {
     @Override
     public void init(){
 
+
         localizationRead = new RRLocalizationRead();
-        localizationRead.initLocalization(hardwareMap);
+        localizationRead.initLocalization(hardwareMap, this);
 
         driveTrain = new DrivetrainControllers();
         driveTrain.initMotorsRR(this, localizationRead);

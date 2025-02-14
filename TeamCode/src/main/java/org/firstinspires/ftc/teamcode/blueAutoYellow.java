@@ -49,7 +49,7 @@ public class blueAutoYellow extends LinearOpMode {
             RevHubOrientationOnRobot.UsbFacingDirection.FORWARD));
     imu.initialize(parameters);
         localizationRead = new RRLocalizationRead();
-        localizationRead.initLocalization(hardwareMap);
+        localizationRead.initLocalization(hardwareMap, this);
         backL = hardwareMap.get(DcMotor.class, "backL");
         frontL = hardwareMap.get(DcMotor.class, "frontL");
         frontR = hardwareMap.get(DcMotor.class, "frontR");
@@ -106,7 +106,7 @@ public class blueAutoYellow extends LinearOpMode {
 
     public void moveForwardByInches(double inches, double timeOut) {
         // Record the initial position
-        Vector2d initialPosition = localizationRead.returnPose().position;
+        Vector2 initialPosition = localizationRead.returnPose();
         double targetY = initialPosition.y + inches;  // Assuming "forward" is along the y-axis
         timeOut = totalTime.seconds() + timeOut;
 
@@ -133,7 +133,7 @@ public class blueAutoYellow extends LinearOpMode {
 
         double backSpeed = -.3;
 
-        Vector2d initialPosition = localizationRead.returnPose().position;
+        Vector2 initialPosition = localizationRead.returnPose();
         double targetY = initialPosition.y + inches;  // Assuming "forward" is along the y-axis
         timeOut = totalTime.seconds() + timeOut;
 

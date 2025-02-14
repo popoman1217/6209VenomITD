@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,15 +84,16 @@ public class FollowPath
     int trajectoryNumber = 0;
 
     OpMode master;
+    Sensors sensors;
 
 
 
     // Start is called before the first frame update
-    void Start(OpMode opMode, RRLocalizationRead rr, String m_fileName)
+    void Start(OpMode opMode, String m_fileName)
     {
         // posReader is the reference to our localization reader (whether it be Lucca's or RR) that has a returnPos that is a pose2d.
         // That way we dont have to worry about which localizer it is, the RRLocalizationRead class will handle that.
-        posReader = rr;
+        posReader = new RRLocalizationRead();
 
         master = opMode;
 
@@ -186,28 +189,45 @@ public class FollowPath
         curWayPointPoss = wayPointPoss.get(trajectoryNumber);
         curThetas = thetas.get(trajectoryNumber);
 
-        Vector2 initialPos;
+        Vector2 initialPos = new Vector2(0,0);
         try {
             initialPos = new Vector2(curWayPointPoss.get(0).x, curWayPointPoss.get(0).y);
             prevIntersect = new double[]{initialPos.x, initialPos.y};
-            posReader.initLocalization(master.hardwareMap, new Pose2d(initialPos.x, initialPos.y, 0));
+            posReader.initLocalization(master.hardwareMap, new Vector2(initialPos.x, initialPos.y), master);
         }
         catch (Exception e) {
             prevIntersect = new double[]{0, 0};
-            posReader.initLocalization(master.hardwareMap, new Pose2d(0, 0, 0));
+            posReader.initLocalization(master.hardwareMap, new Vector2(0, 0), master);
             master.telemetry.addLine("CurWayPointPos on initialization does not have a value at index 0: " + e);
             master.telemetry.update();
         }
 
-            Pose2d pos = posReader.returnPose();
-            master.telemetry.addLine("fieldPos: x: " + pos.position.x + ", y: " + pos.position.y + ", heading: " + pos.heading);
-            fieldPos = new Vector2(pos.position.x, pos.position.y);
+            Vector2 pos = posReader.returnPose();
+            master.telemetry.addLine("fieldPos: x: " + pos.x + ", y: " + pos.y + ", heading: " + posReader.returnHeading());
+            fieldPos = new Vector2(pos.x, pos.y);
             curAngle = getWeightedAngle();
     }
+
+    public void initPostInitialization(Sensors s)
+    {
+        sensors = s;
+        posReader.initPostInitialization(s);
+    }
+
+    public void initPostStart()
+    {
+        posReader.initPostStart();
+    }
+
 
     public Vector2 getFieldPos()
     {
         return fieldPos;
+    }
+
+    public void setFieldPos(Vector2 fp)
+    {
+        fieldPos = fp;
     }
 
 
@@ -275,7 +295,7 @@ public class FollowPath
     private double[] getIntersectOfTajectory(){
     // Creating the localized field position. This is only for the simulation. There will be no "convert to"
     // in the actual robot. This line will just be something like "getPosition".
-    Pose2d fieldPos = posReader.returnPose();
+    Vector2 fieldPos = posReader.returnPose();
     // Using the theta, this is the dydx of the cur line/traj.
     double slope = getSlopeOfGrossTraj();
     // Math to find the x and y intersection of the trajectory.
@@ -288,7 +308,7 @@ public class FollowPath
     {
         //  Debug.Log("ERROR");
     }
-    intersect[0] = (fieldPos.position.y - curWayPointPoss.get(curWP).y + fieldPos.position.x / slope + slope * curWayPointPoss.get(curWP).x) / (1/slope + slope);
+    intersect[0] = (fieldPos.y - curWayPointPoss.get(curWP).y + fieldPos.x / slope + slope * curWayPointPoss.get(curWP).x) / (1/slope + slope);
     intersect[1] = curWayPointPoss.get(curWP).y + slope * (intersect[0] - curWayPointPoss.get(curWP).x);
     return intersect;
 }
@@ -445,8 +465,8 @@ public class FollowPath
 
     private void updatePos()
     {
-        Pose2d pos = posReader.returnPose();
-        fieldPos = new Vector2(pos.position.x, pos.position.y);
+        Vector2 pos = posReader.returnPose();
+        fieldPos = new Vector2(pos.x, pos.y);
         double cos = Math.cos((float)curAngle * degreesToRadians);
         double[] curIntersect = getIntersectOfTajectory();
         if (prevIntersect != null)
@@ -532,7 +552,7 @@ public class FollowPath
             double powerPerp = dist / (dist + TRAJ_WEIGHT_CONST);
             double powerPar = 1 - powerPerp;
 
-            //master.telemetry.addData("powerPerp", powerPerp);
+            master.telemetry.addData("powerPerp", powerPerp);
 
             double[] finalTraj = new double[]{powerPerp * trajPerp[0] + powerPar * trajPar[0], powerPar * trajPar[1] + powerPerp * trajPerp[1]};
             double lengthOfFinalVector = getGeneralDist(finalTraj[0], finalTraj[1]);
@@ -552,12 +572,143 @@ public class FollowPath
 
     public boolean isAtEnd()
     {
-        return getGeneralDist(fieldPos.x - curWayPointPoss.get(curWayPointPoss.size() - 1).x, fieldPos.y - curWayPointPoss.get(curWayPointPoss.size() - 1).y) < 2;//Math.Abs(curPos - curTotalDists[curTotalDists.Count - 1]) <= 1;
+        return getGeneralDist(fieldPos.x - curWayPointPoss.get(curWayPointPoss.size() - 1).x, fieldPos.y - curWayPointPoss.get(curWayPointPoss.size() - 1).y) < 1.25;//Math.Abs(curPos - curTotalDists[curTotalDists.Count - 1]) <= 1;
     }
 
     // Update is called once per frame
     public void update() {
         updatePos();
+    }
+
+    public void runPathFollowerMotors(DrivetrainControllers dt, double tarHeading, RRLocalizationRead rr, ControllerHandler controllerHandler, LinearOpMode linearOpMode)
+    {
+        boolean RUNMOTORS = true;
+        while (!isAtEnd() && !linearOpMode.isStopRequested())
+        {
+            boolean a = controllerHandler.isGP1APressed1Frame();
+            if (a && RUNMOTORS)
+                RUNMOTORS = false;
+            else if (a)
+                RUNMOTORS = true;
+
+            //RUNMOTORS = true;
+
+            update();
+
+            Vector2 pose = posReader.returnPose();
+            double adder = 0;
+            if (sensors != null)
+                adder = sensors.getTrueAngleDiff(tarHeading) * .01;
+            //adder = 0;
+            master.telemetry.addData("adder", adder);
+            master.telemetry.addData("heading", posReader.returnHeading());
+            master.telemetry.addLine("x: " + pose.x + " y: " + pose.y + " heading: " + posReader.returnHeading());
+            master.telemetry.addData("RUNMOTORS", RUNMOTORS);
+            double[] traj = getRobotTrajectory();
+            master.telemetry.addLine("dirx " + traj[0] + "dirY " + traj[1]);
+            double y = traj[1];
+            double x = traj[0];
+            double heading = posReader.returnHeading();
+            double multiplier = getSpeedController();
+            double trueX = x * Math.cos(Math.toRadians(heading)) - y * Math.sin(Math.toRadians(heading));
+            double trueY = x * Math.sin(Math.toRadians(heading)) + y * Math.cos(Math.toRadians(heading));
+            if (RUNMOTORS) {
+                double frontLeftPower = (trueY + trueX - adder) * multiplier;
+                double backLeftPower = (trueY - trueX - adder) * multiplier;
+                double frontRightPower = (trueY - trueX + adder) * multiplier;
+                double backRightPower = (trueY + trueX + adder) * multiplier;
+
+                master.telemetry.addData("fl power", frontLeftPower);
+
+                dt.frontRightMotor.setPower(frontRightPower * .5);
+                dt.frontLeftMotor.setPower(frontLeftPower * .5);
+                dt.backRightMotor.setPower(backRightPower * .5);
+                dt.backLeftMotor.setPower(backLeftPower * .5);
+
+                master.telemetry.addData("fl motor", dt.frontLeftMotor.getPortNumber());
+            }
+            else
+            {
+                dt.frontRightMotor.setPower(0);
+                dt.frontLeftMotor.setPower(0);
+                dt.backRightMotor.setPower(0);
+                dt.backLeftMotor.setPower(0);
+            }
+
+            master.telemetry.addData("y", y);
+            master.telemetry.addData("x", x);
+            master.telemetry.addData("yaw from sensors", posReader.returnHeading());
+            master.telemetry.update();
+
+            controllerHandler.update();
+            master.telemetry.update();
+        }
+    }
+
+    public void runPathFollowerMotors(DrivetrainControllers dt, double tarHeading, double timeout, RRLocalizationRead rr, ControllerHandler controllerHandler, LinearOpMode linearOpMode)
+    {
+        boolean RUNMOTORS = true;
+        ElapsedTime pathTime = new ElapsedTime();
+        while (!isAtEnd() && !linearOpMode.isStopRequested() && pathTime.seconds() < timeout)
+        {
+            boolean a = controllerHandler.isGP1APressed1Frame();
+            if (a && RUNMOTORS)
+                RUNMOTORS = false;
+            else if (a)
+                RUNMOTORS = true;
+
+            //RUNMOTORS = true;
+
+            update();
+
+            Vector2 pose = posReader.returnPose();
+            double adder = 0;
+            if (sensors != null)
+                adder = sensors.getTrueAngleDiff(tarHeading) * .01;
+            //adder = 0;
+            master.telemetry.addData("adder", adder);
+            master.telemetry.addData("heading", posReader.returnHeading());
+            master.telemetry.addLine("x: " + pose.x + " y: " + pose.y + " heading: " + posReader.returnHeading());
+            master.telemetry.addData("RUNMOTORS", RUNMOTORS);
+            double[] traj = getRobotTrajectory();
+            master.telemetry.addLine("dirx " + traj[0] + "dirY " + traj[1]);
+            double y = traj[1];
+            double x = traj[0];
+            double heading = posReader.returnHeading();
+            double multiplier = getSpeedController();
+            double trueX = x * Math.cos(Math.toRadians(heading)) - y * Math.sin(Math.toRadians(heading));
+            double trueY = x * Math.sin(Math.toRadians(heading)) + y * Math.cos(Math.toRadians(heading));
+            if (RUNMOTORS) {
+                double frontLeftPower = (trueY + trueX - adder) * multiplier;
+                double backLeftPower = (trueY - trueX - adder) * multiplier;
+                double frontRightPower = (trueY - trueX + adder) * multiplier;
+                double backRightPower = (trueY + trueX + adder) * multiplier;
+
+                master.telemetry.addData("fl power", frontLeftPower);
+
+                dt.frontRightMotor.setPower(frontRightPower * .5);
+                dt.frontLeftMotor.setPower(frontLeftPower * .5);
+                dt.backRightMotor.setPower(backRightPower * .5);
+                dt.backLeftMotor.setPower(backLeftPower * .5);
+
+                master.telemetry.addData("fl motor", dt.frontLeftMotor.getPortNumber());
+            }
+            else
+            {
+                dt.frontRightMotor.setPower(0);
+                dt.frontLeftMotor.setPower(0);
+                dt.backRightMotor.setPower(0);
+                dt.backLeftMotor.setPower(0);
+            }
+
+            master.telemetry.addData("y", y);
+            master.telemetry.addData("x", x);
+            master.telemetry.addData("yaw from sensors", posReader.returnHeading());
+            master.telemetry.update();
+
+            controllerHandler.update();
+            master.telemetry.update();
+        }
     }
 }
 

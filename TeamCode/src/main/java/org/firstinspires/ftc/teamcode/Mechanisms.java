@@ -99,11 +99,11 @@ public class Mechanisms {
 
     // done
     public static double HIGH_OT_ARM_POSL = 0.6;
-    public static double LOW_OT_ARM_POSL = 0.19;
+    public static double LOW_OT_ARM_POSL = 0.23;
     public static double NEUTRAL_OT_ARM_POSL = 0.55;
 
     public static double HIGH_OT_ARM_POSR = 0.03;
-    public static double LOW_OT_ARM_POSR = .44;
+    public static double LOW_OT_ARM_POSR = .4;
     public static double NEUTRAL_OT_ARM_POSR = .08;
 
     public static double STRAIGHT_OT_FLIP_POS = 0.6;
@@ -117,14 +117,14 @@ public class Mechanisms {
     public static double OPEN_CLAW_POS = 0.3;
     public static double NEUTRAL_CLAW_POS = 0.2;
 
-    public static double LOW_IT_FLIP_POSR = 0.07;
-    public static double LOW_IT_FLIP_POSL = 0.94;
+    public static double LOW_IT_FLIP_POSR = 0.05;
+    public static double LOW_IT_FLIP_POSL = 0.6;
     public static double NEUTRAL_IT_FLIP_POSR = 0.38;
-    public static double NEUTRAL_IT_FLIP_POSL = 0.6;
-    public static double HIGH_IT_FLIP_POSR = 0.66;
-    public static double HIGH_IT_FLIP_POSL = 0.38;
+    public static double NEUTRAL_IT_FLIP_POSL = 0.28;
+    public static double HIGH_IT_FLIP_POSR = 0.63;
+    public static double HIGH_IT_FLIP_POSL = 0.03;
     public static double EASE_IT_FLIP_POSR = 0.1;
-    public static double EASE_IT_FLIP_POSL = 0.91;
+    public static double EASE_IT_FLIP_POSL = 0.55;
 
     public double HIGH_IT_FLIP_POSL_CHANGE = 0;
     public double HIGH_IT_FLIP_POSR_CHANGE = 0;
@@ -473,6 +473,18 @@ public class Mechanisms {
         intakePivotR.setPosition(LOW_IT_FLIP_POSR);
     }
 
+    public void moveIntakeDownCompletely()
+    {
+        inTakeStateTime.reset();
+        while (inTakeStateTime.milliseconds() < 500)
+        {
+            intakePivotL.setPosition(EASE_IT_FLIP_POSL);
+            intakePivotR.setPosition(EASE_IT_FLIP_POSR);
+        }
+        intakePivotL.setPosition(LOW_IT_FLIP_POSL +.03);
+        intakePivotR.setPosition(LOW_IT_FLIP_POSR - .03);
+    }
+
     public void powerSpinners(double power)
     {
         inTakeSpinners.setPower(-power);
@@ -515,6 +527,13 @@ public class Mechanisms {
             update();
             powerITPIDToTarget();
         }
+
+    }
+
+    public void moveIntakeNeutral()
+    {
+        intakePivotL.setPosition(NEUTRAL_IT_FLIP_POSL);
+        intakePivotR.setPosition(NEUTRAL_IT_FLIP_POSR);
     }
 
     public void powerITLift(double power)
@@ -964,7 +983,7 @@ public class Mechanisms {
                     switchITMacroState("closeclaw");
                 }
             }
-            inTakeSpinners.setPower(-.7);
+            inTakeSpinners.setPower(-1);
             outTakePivotLeft.setPosition(LOW_OT_ARM_POSL);
             outTakePivotRight.setPosition(LOW_OT_ARM_POSR);
         }

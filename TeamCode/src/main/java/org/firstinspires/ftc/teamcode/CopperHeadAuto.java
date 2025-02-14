@@ -33,9 +33,9 @@ public class CopperHeadAuto extends LinearOpMode {
 
         pathFollower = new FollowPath();
 
-        rr.initLocalization(hardwareMap, new Pose2d(0, 0, 0));
+        rr.initLocalization(hardwareMap, new Vector2(0, 0), this);
 
-        pathFollower.Start(this, rr, "/sdcard/FIRST/PathTest.txt");
+        pathFollower.Start(this, "/sdcard/FIRST/PathTest.txt");
 
         ElapsedTime time = new ElapsedTime();
 
@@ -206,13 +206,12 @@ public class CopperHeadAuto extends LinearOpMode {
 
             pathFollower.update();
 
-            Pose2d pose = rr.returnPose();
-            tarHeading = pose.heading.toDouble();
+            Vector2 pose = rr.returnPose();
             double adder = sensors.getTrueAngleDiff(tarHeading) * .01;
             //adder = 0;
             telemetry.addData("adder", adder);
             telemetry.addData("heading", sensors.returnGyroYaw());
-            telemetry.addLine("x: " + pose.position.x + " y: " + pose.position.y + " heading: " + pose.heading);
+            telemetry.addLine("x: " + pose.x + " y: " + pose.y + " heading: " + rr.returnHeading());
             telemetry.addData("RUNMOTORS", RUNMOTORS);
             double[] traj = pathFollower.getRobotTrajectory();
             telemetry.addLine("dirx " + traj[0] + "dirY " + traj[1]);

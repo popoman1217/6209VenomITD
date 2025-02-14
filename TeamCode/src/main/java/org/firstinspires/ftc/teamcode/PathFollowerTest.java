@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.ftc.Actions;
@@ -23,28 +24,28 @@ public class PathFollowerTest extends LinearOpMode {
     static int tarPose = 2800;
     public boolean RUNMOTORS = false;
     ControllerHandler controllerHandler = new ControllerHandler();
+    ElapsedTime time = new ElapsedTime();
 
     @Override
     public void runOpMode() throws InterruptedException{
 
-        RRLocalizationRead rr = new RRLocalizationRead();
-        rr.initLocalization(hardwareMap, new Pose2d(0, 0, 0));
 
         controllerHandler.initController(this);
 
         pathFollower = new FollowPath();
 
 
-        pathFollower.Start(this, rr, "/sdcard/FIRST/PathTest.txt");
-
-        ElapsedTime time = new ElapsedTime();
-
-        DrivetrainControllers dt = new DrivetrainControllers();
-        dt.initMotorsRR(this, rr);
 
         sensors = new Sensors();
         double initHeading = 0;
         sensors.init(this, initHeading);
+
+        pathFollower.Start(this, "/sdcard/FIRST/PathTest.txt");
+
+        ElapsedTime time = new ElapsedTime();
+
+        DrivetrainControllers dt = new DrivetrainControllers();
+        dt.initMotorsRR(this, pathFollower.posReader);
 
         StateHandler stateHandler = new StateHandler();
         stateHandler.init(this);
@@ -54,12 +55,11 @@ public class PathFollowerTest extends LinearOpMode {
         mechanisms.outTakeClaw.setPosition(mechanisms.GRAB_CLAW_POS);
         mechanisms.setIntakeZeroPos(0);
         mechanisms.setOutTakeZeroPos(0);
-        mechanisms.setIntakeMacroPos(mechanisms.itlPos + 150);
+        mechanisms.setIntakeMacroPos(mechanisms.itlPos + 225);
 
         CommonMechanisms commonMechanisms = new CommonMechanisms();
         commonMechanisms.init(this, stateHandler, mechanisms);
 
-        telemetry.update();
 
         StateHandler.CoRoutines[] bothCoRoutines = {StateHandler.CoRoutines.ITPID, StateHandler.CoRoutines.OTPID};
 
@@ -77,43 +77,56 @@ public class PathFollowerTest extends LinearOpMode {
 
         //mechanisms.outTakeClaw.setPosition(mechanisms.GRAB_CLAW_POS);
 
+        pathFollower.initPostInitialization(sensors);
+        Vector2 fieldPos = pathFollower.getFieldPos();
+
+        telemetry.addData("x", fieldPos.x);
+        telemetry.addData("y", fieldPos.y);
+
+        telemetry.update();
+        //mechanisms.moveIntakeDown();
+
         waitForStart();
         if(isStopRequested()) return;
 
+        time.reset();
+        while (time.milliseconds() < 200) {
+            pathFollower.initPostStart();
+            telemetry.update();
+        }
+        //pathFollower.posReader.initLocalization(hardwareMap, new Pose2d(fieldPos.x, fieldPos.y, sensors.returnGyroYaw()));
 
+
+
+       /* while (!isStopRequested()) {
+            Vector2 pos = pathFollower.posReader.returnPose();
+            telemetry.addData("x", pos.x);
+            telemetry.addData("y", pos.y);
+            telemetry.addData("Pose heading", pathFollower.posReader.returnHeading());
+            telemetry.addData("heading", sensors.returnGyroYaw());
+            telemetry.update();
+        }*/
+        //pathFollower.posReader.returnPose();
+        //pathFollower.posReader.resetPos(new Pose2d(fieldPos.x, fieldPos.y, sensors.returnGyroYaw()));
 
         stateHandler.switchState("beginning");
 
         if (stateHandler.state.equals("beginning")) {
-            double tarHeading = 5;
+            double tarHeading = -5;
             time.reset();
-            runPathFollowerMotors(dt, tarHeading, rr);
+            pathFollower.runPathFollowerMotors(dt, tarHeading, pathFollower.posReader, controllerHandler, this);
             dt.frontRightMotor.setPower(0);
             dt.frontLeftMotor.setPower(0);
             dt.backRightMotor.setPower(0);
             dt.backLeftMotor.setPower(0);
-            stateHandler.switchState("move to specimen");
+            stateHandler.switchState("place", 500, mechanisms, StateHandler.CoRoutines.None);
         }
 
-        //commonMechanisms.moveFromClampedToPlaceAndBack("move to specimen");
-
-
-        if (stateHandler.state.equals("move to specimen")) {
-            double tarHeading = 5;
-            time.reset();
-            pathFollower.incrementTrajNumber();
-            runPathFollowerMotors(dt, tarHeading, rr);
-            dt.frontRightMotor.setPower(0);
-            dt.frontLeftMotor.setPower(0);
-            dt.backRightMotor.setPower(0);
-            dt.backLeftMotor.setPower(0);
-            stateHandler.switchState("move to place");//"moving intake", 500, mechanisms, StateHandler.CoRoutines.OTPID);
-        }
-
+        commonMechanisms.moveFromClampedToPlaceAndBack("moving intake");
 
         if (stateHandler.state.equals("moving intake"))
         {
-            mechanisms.moveITLiftEncoder(.8, 175, 2);
+            mechanisms.moveITLiftEncoder(.8, 250, 2);
             mechanisms.powerITPIDToTarget();
             //mechanisms.powerITLift(0);
             stateHandler.stateUpdate();
@@ -123,26 +136,45 @@ public class PathFollowerTest extends LinearOpMode {
         if (stateHandler.state.equals("move intake down"))
         {
             mechanisms.moveIntakeDown();
-            mechanisms.powerSpinners(.7);
+            mechanisms.powerSpinners(1);
             stateHandler.stateUpdate();
-            stateHandler.switchState("transfer");
+            stateHandler.switchState("move intake further");
         }
 
-        if (stateHandler.state.equals("transfer"))
+        if (stateHandler.state.equals("move intake further"))
         {
             mechanisms.resetMacroVals(true);
             mechanisms.moveITLiftEncoder(.8, 200, 2);
             mechanisms.powerITPIDToTarget();
+            stateHandler.stateUpdate();
+            stateHandler.switchState("move to specimen", 500, mechanisms, bothCoRoutines);
+        }
+
+
+        if (stateHandler.state.equals("move to specimen")) {
+            double tarHeading = -3;
+            time.reset();
+            pathFollower.incrementTrajNumber();
+            pathFollower.runPathFollowerMotors(dt, tarHeading, pathFollower.posReader, controllerHandler, this);
+            dt.frontRightMotor.setPower(0);
+            dt.frontLeftMotor.setPower(0);
+            dt.backRightMotor.setPower(0);
+            dt.backLeftMotor.setPower(0);
+            dt.oscillateMotors(.3,.7,sensors, pathFollower.posReader);
+            stateHandler.switchState("transfer", 300, mechanisms, bothCoRoutines);//"moving intake", 500, mechanisms, StateHandler.CoRoutines.OTPID);
+        }
+
+        if (stateHandler.state.equals("transfer")) {
             mechanisms.transferMacroAuto();
             stateHandler.stateUpdate();
-            stateHandler.switchState("move to place", 500, mechanisms, bothCoRoutines);
+            stateHandler.switchState("move to place", 100, mechanisms, bothCoRoutines);
         }
 
         if (stateHandler.state.equals("move to place")) {
-            double tarHeading = 5;
+            double tarHeading = -5;
             time.reset();
             pathFollower.incrementTrajNumber();
-            runPathFollowerMotors(dt, tarHeading, rr);
+            pathFollower.runPathFollowerMotors(dt, tarHeading, 3, pathFollower.posReader, controllerHandler, this);
             dt.frontRightMotor.setPower(0);
             dt.frontLeftMotor.setPower(0);
             dt.backRightMotor.setPower(0);
@@ -150,74 +182,28 @@ public class PathFollowerTest extends LinearOpMode {
             stateHandler.switchState("raising lift", 1000, mechanisms, StateHandler.CoRoutines.OTPID);
         }
 
-        //commonMechanisms.moveFromClampedToPlaceAndBack("none");
+        commonMechanisms.moveFromClampedToPlaceAndBack("moveToPark");
+
+        mechanisms.moveIntakeNeutral();
 
 
         mechanisms.outTakePivotLeft.setPosition(Mechanisms.LOW_OT_ARM_POSL);
         mechanisms.outTakePivotRight.setPosition(Mechanisms.LOW_OT_ARM_POSR);
 
-
-    }
-
-    public void runPathFollowerMotors(DrivetrainControllers dt, double tarHeading, RRLocalizationRead rr)
-    {
-        RUNMOTORS = false;
-        while (!pathFollower.isAtEnd() && !isStopRequested())
-        {
-            boolean a = controllerHandler.isGP1APressed1Frame();
-            if (a && RUNMOTORS)
-                RUNMOTORS = false;
-            else if (a)
-                RUNMOTORS = true;
-
-            //RUNMOTORS = true;
-
-            pathFollower.update();
-
-            Pose2d pose = rr.returnPose();
-            tarHeading = pose.heading.toDouble();
-            double adder = sensors.getTrueAngleDiff(tarHeading) * .01;
-            //adder = 0;
-            telemetry.addData("adder", adder);
-            telemetry.addData("heading", sensors.returnGyroYaw());
-            telemetry.addLine("x: " + pose.position.x + " y: " + pose.position.y + " heading: " + pose.heading);
-            telemetry.addData("RUNMOTORS", RUNMOTORS);
-            double[] traj = pathFollower.getRobotTrajectory();
-            telemetry.addLine("dirx " + traj[0] + "dirY " + traj[1]);
-            double y = traj[1];
-            double x = traj[0];
-            double heading = sensors.returnGyroYaw();
-            double multiplier = pathFollower.getSpeedController();
-            double trueX = x * Math.cos(Math.toRadians(heading)) - y * Math.sin(Math.toRadians(heading));
-            double trueY = x * Math.sin(Math.toRadians(heading)) + y * Math.cos(Math.toRadians(heading));
-            if (RUNMOTORS) {
-                double frontLeftPower = (trueY + trueX - adder) * multiplier;
-                double backLeftPower = (trueY - trueX - adder) * multiplier;
-                double frontRightPower = (trueY - trueX + adder) * multiplier;
-                double backRightPower = (trueY + trueX + adder) * multiplier;
-
-                telemetry.addData("fl power", frontLeftPower);
-
-                dt.frontRightMotor.setPower(frontRightPower * .5);
-                dt.frontLeftMotor.setPower(frontLeftPower * .5);
-                dt.backRightMotor.setPower(backRightPower * .5);
-                dt.backLeftMotor.setPower(backLeftPower * .5);
-
-                telemetry.addData("fl motor", dt.frontLeftMotor.getPortNumber());
-            }
-            else
-            {
-                dt.frontRightMotor.setPower(0);
-                dt.frontLeftMotor.setPower(0);
-                dt.backRightMotor.setPower(0);
-                dt.backLeftMotor.setPower(0);
-            }
-
-            telemetry.addData("y", y);
-            telemetry.addData("x", x);
-            telemetry.update();
-
-            telemetry.update();
+        if (stateHandler.state.equals("move to place")) {
+            double tarHeading = 0;
+            time.reset();
+            pathFollower.incrementTrajNumber();
+            pathFollower.runPathFollowerMotors(dt, tarHeading, 6, pathFollower.posReader, controllerHandler, this);
+            dt.frontRightMotor.setPower(0);
+            dt.frontLeftMotor.setPower(0);
+            dt.backRightMotor.setPower(0);
+            dt.backLeftMotor.setPower(0);
+            stateHandler.switchState("none");
         }
+
+
     }
+
+
 }

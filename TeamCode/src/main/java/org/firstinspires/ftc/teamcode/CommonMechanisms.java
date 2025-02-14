@@ -43,7 +43,7 @@ public class CommonMechanisms {
             mechanisms.outTakePivotLeft.setPosition(Mechanisms.HIGH_OT_ARM_POSL);
             mechanisms.outTakePivotRight.setPosition(Mechanisms.HIGH_OT_ARM_POSR);
             stateHandler.stateUpdate();
-            stateHandler.switchState("opening claw", 500, mechanisms, StateHandler.CoRoutines.OTPID);
+            stateHandler.switchState("opening claw", 700, mechanisms, StateHandler.CoRoutines.OTPID);
         }
 
         if (stateHandler.state.equals("opening claw"))

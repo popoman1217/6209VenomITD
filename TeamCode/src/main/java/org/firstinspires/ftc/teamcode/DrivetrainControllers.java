@@ -70,6 +70,30 @@ public class DrivetrainControllers {
         master = opMode;
     }
 
+    public void oscillateMotors(double power, double timeOut, Sensors sensors, RRLocalizationRead rrLocalizationRead)
+    {
+        timeOut = totalTime.seconds() + timeOut;
+        double startTime = totalTime.seconds();
+
+        while (totalTime.seconds() <= timeOut) {
+            double truePower = power * (Math.sin((totalTime.seconds() - startTime) * Math.PI * 4));
+            master.telemetry.addData("truePower", truePower);
+            frontLeftMotor.setPower(-truePower);
+            backLeftMotor.setPower(-truePower);
+            frontRightMotor.setPower(truePower);
+            backRightMotor.setPower(truePower);
+            master.telemetry.update();
+            rrLocalizationRead.returnPose();
+
+        }
+
+        // Stop the robot once the target position is reached
+        frontLeftMotor.setPower(0);// Apply forward power
+        frontRightMotor.setPower(0);
+        backLeftMotor.setPower(0);// Apply forward power
+        backRightMotor.setPower(0);
+    }
+
     ////////////////////////////////////////////////////
     double acceleratorFR(double tarPower)
     {

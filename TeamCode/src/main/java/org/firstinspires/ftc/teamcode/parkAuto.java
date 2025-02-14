@@ -35,7 +35,7 @@ public class parkAuto extends LinearOpMode {
     @Override
     public void runOpMode() {
         localizationRead = new RRLocalizationRead();
-        localizationRead.initLocalization(hardwareMap);
+        localizationRead.initLocalization(hardwareMap, this);
 
         driveTrain = new DrivetrainControllers();
         driveTrain.init(this);

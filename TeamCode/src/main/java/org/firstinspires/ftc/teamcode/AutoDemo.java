@@ -33,14 +33,14 @@ public class AutoDemo extends LinearOpMode {
 
         pathFollower = new FollowPath();
 
-        rr.initLocalization(hardwareMap, new Pose2d(0, 0, 0));
+        //rr.initLocalization(hardwareMap, new Pose2d(0, 0, 0));
 
-        pathFollower.Start(this, rr, "/sdcard/FIRST/AutoDemo.txt");
+        pathFollower.Start(this, "/sdcard/FIRST/AutoDemo.txt");
 
         ElapsedTime time = new ElapsedTime();
 
         DrivetrainControllers dt = new DrivetrainControllers();
-        dt.initMotorsRR(this, rr);
+        dt.initMotorsRR(this, pathFollower.posReader);
 
         sensors = new Sensors();
         double initHeading = 0;
@@ -91,13 +91,12 @@ public class AutoDemo extends LinearOpMode {
 
             pathFollower.update();
 
-            Pose2d pose = rr.returnPose();
-            tarHeading = pose.heading.toDouble();
+            Vector2 pose = rr.returnPose();
             double adder = sensors.getTrueAngleDiff(tarHeading) * .01;
             //adder = 0;
             telemetry.addData("adder", adder);
             telemetry.addData("heading", sensors.returnGyroYaw());
-            telemetry.addLine("x: " + pose.position.x + " y: " + pose.position.y + " heading: " + pose.heading);
+            telemetry.addLine("x: " + pose.x + " y: " + pose.y + " heading: " + rr.returnHeading());
             telemetry.addData("RUNMOTORS", RUNMOTORS);
             double[] traj = pathFollower.getRobotTrajectory();
             telemetry.addLine("dirx " + traj[0] + "dirY " + traj[1]);
